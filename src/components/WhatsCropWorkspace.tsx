@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Upload, X, Download, Sparkles, ImageIcon, Palette, 
+  Upload, X, Download, ImageIcon, Palette, 
   Maximize, ZoomIn, ZoomOut, Circle, Layout, Move, Square,
   CheckCircle2, AlertCircle
 } from 'lucide-react';
@@ -11,8 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { enhanceImage } from '@/ai/flows/enhance-image-flow';
-import { generateBlurredBackground } from '@/ai/flows/generate-blurred-background-flow';
 import { cn } from '@/lib/utils';
 
 type EditMode = 'blur' | 'solid' | 'fit' | 'manual';
@@ -21,8 +19,6 @@ type PreviewMode = 'square' | 'circle';
 export function WhatsCropWorkspace() {
   const [image, setImage] = useState<string | null>(null);
   const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
-  const [processedImage, setProcessedImage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [mode, setMode] = useState<EditMode>('blur');
   const [previewMode, setPreviewMode] = useState<PreviewMode>('circle');
   const [blurIntensity, setBlurIntensity] = useState(30);
@@ -48,7 +44,6 @@ export function WhatsCropWorkspace() {
       reader.onload = (event) => {
         const result = event.target?.result as string;
         setImage(result);
-        setProcessedImage(null);
         setZoom(100);
         setPosition({ x: 0, y: 0 });
       };
@@ -70,7 +65,6 @@ export function WhatsCropWorkspace() {
       reader.onload = (event) => {
         const result = event.target?.result as string;
         setImage(result);
-        setProcessedImage(null);
         setZoom(100);
         setPosition({ x: 0, y: 0 });
       };
@@ -81,16 +75,16 @@ export function WhatsCropWorkspace() {
   };
 
   useEffect(() => {
-    if (image || processedImage) {
+    if (image) {
       const img = new Image();
-      img.src = processedImage || image || '';
+      img.src = image;
       img.onload = () => {
         setImageObj(img);
       };
     } else {
       setImageObj(null);
     }
-  }, [image, processedImage]);
+  }, [image]);
 
   const drawProcessedView = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, shape: 'square' | 'circle', isExport: boolean = false) => {
     if (!imageObj) return;
@@ -130,8 +124,9 @@ export function WhatsCropWorkspace() {
     const drawW = imageObj.width * finalScale;
     const drawH = imageObj.height * finalScale;
     
-    const centerX = canvasW / 2 + position.x * (isExport ? 1080 / 450 : 1);
-    const centerY = canvasH / 2 + position.y * (isExport ? 1080 / 450 : 1);
+    const scaleFactor = isExport ? 1080 / 450 : 1;
+    const centerX = canvasW / 2 + position.x * scaleFactor;
+    const centerY = canvasH / 2 + position.y * scaleFactor;
 
     ctx.drawImage(imageObj, centerX - drawW / 2, centerY - drawH / 2, drawW, drawH);
     ctx.restore();
@@ -162,34 +157,6 @@ export function WhatsCropWorkspace() {
       return () => cancelAnimationFrame(rafId);
     }
   }, [drawProcessedView, imageObj, previewMode]);
-
-  const handleEnhance = async () => {
-    if (!image) return;
-    setIsProcessing(true);
-    try {
-      const result = await enhanceImage({ photoDataUri: image });
-      setProcessedImage(result.enhancedPhotoDataUri);
-      toast({ title: 'HD Enhancement Complete', description: 'Your photo is now ultra-sharp!' });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to enhance image.' });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleAIBlur = async () => {
-    if (!image) return;
-    setIsProcessing(true);
-    try {
-      const result = await generateBlurredBackground({ photoDataUri: image });
-      setProcessedImage(result.enhancedPhotoDataUri);
-      toast({ title: 'AI Smart Fill Done', description: 'Generated a seamless background extension.' });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate background.' });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleDownload = () => {
     if (!imageObj) return;
@@ -244,7 +211,6 @@ export function WhatsCropWorkspace() {
             className="p-12 md:p-40 flex flex-col items-center justify-center text-center cursor-pointer bg-secondary/10 hover:bg-primary/5 transition-all group relative overflow-hidden"
             onClick={() => fileInputRef.current?.click()}
           >
-            {/* Background Decorative Elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full -ml-32 -mb-32 blur-3xl" />
 
@@ -266,7 +232,6 @@ export function WhatsCropWorkspace() {
             <div className="flex-grow p-4 md:p-12 bg-[#F7F9FA] flex flex-col items-center gap-6 md:gap-10 relative min-h-[500px] md:min-h-[700px]">
               
               <div className="flex flex-col items-center gap-6 md:gap-10 w-full max-w-2xl">
-                {/* Responsive View Switcher */}
                 <div className="flex p-1.5 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/50 w-full max-w-md">
                   <Button 
                     variant={previewMode === 'square' ? 'default' : 'ghost'} 
@@ -284,7 +249,6 @@ export function WhatsCropWorkspace() {
                   </Button>
                 </div>
 
-                {/* Canvas Container */}
                 <div className="w-full max-w-[450px] relative">
                   {previewMode === 'square' ? (
                     <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-500">
@@ -334,12 +298,11 @@ export function WhatsCropWorkspace() {
                 </div>
               </div>
 
-              {/* Reset Button */}
               <div className="absolute top-6 right-6 flex gap-3">
                 <Button 
                   variant="outline" 
                   size="icon" 
-                  onClick={() => { setImage(null); setProcessedImage(null); }} 
+                  onClick={() => { setImage(null); setImageObj(null); }} 
                   className="rounded-2xl bg-white/80 backdrop-blur-sm border-none shadow-xl text-destructive hover:bg-destructive hover:text-white h-12 w-12 transition-all hover:rotate-90"
                 >
                   <X className="w-6 h-6" />
@@ -347,9 +310,7 @@ export function WhatsCropWorkspace() {
               </div>
             </div>
 
-            {/* Controls Section */}
             <div className="w-full xl:w-[500px] border-t xl:border-t-0 xl:border-l p-6 md:p-12 flex flex-col gap-10 bg-white">
-              {/* Style Section */}
               <div className="space-y-6">
                 <h4 className="text-xs font-black text-[#111B21]/30 uppercase tracking-[0.3em] flex items-center gap-3">
                   <ImageIcon className="w-4 h-4 text-primary" /> Background Treatment
@@ -376,7 +337,6 @@ export function WhatsCropWorkspace() {
                 </Tabs>
               </div>
 
-              {/* Contextual Options */}
               <div className="space-y-8 min-h-[120px]">
                 {mode === 'blur' && (
                   <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
@@ -385,15 +345,6 @@ export function WhatsCropWorkspace() {
                       <span className="text-sm font-mono font-bold text-primary px-3 py-1 bg-primary/10 rounded-lg">{blurIntensity}%</span>
                     </div>
                     <Slider value={[blurIntensity]} onValueChange={([v]) => setBlurIntensity(v)} max={100} className="py-2" />
-                    <Button 
-                      variant="outline" 
-                      className="w-full gap-3 h-16 md:h-20 border-primary/20 text-primary hover:bg-primary/5 rounded-3xl font-black uppercase tracking-widest text-sm transition-all shadow-sm" 
-                      onClick={handleAIBlur} 
-                      disabled={isProcessing}
-                    >
-                      <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
-                      {isProcessing ? 'Processing AI...' : 'AI Smart Background Fill'}
-                    </Button>
                   </div>
                 )}
 
@@ -419,7 +370,6 @@ export function WhatsCropWorkspace() {
                   </div>
                 )}
 
-                {/* Always show Zoom controls for better accessibility */}
                 <div className="space-y-6 animate-in fade-in duration-700">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -436,22 +386,11 @@ export function WhatsCropWorkspace() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="mt-auto space-y-4 pt-10">
-                <Button 
-                  variant="outline" 
-                  className="w-full gap-3 h-16 md:h-20 border-primary/30 text-[#128C7E] hover:bg-[#128C7E]/5 rounded-3xl font-black uppercase tracking-widest text-sm md:text-base transition-all group" 
-                  onClick={handleEnhance} 
-                  disabled={isProcessing}
-                >
-                  <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                  {isProcessing ? 'Enhancing to HD...' : 'AI HD Enhancement'}
-                </Button>
-                
                 <Button 
                   className="w-full gap-4 h-20 md:h-24 text-xl md:text-3xl font-black rounded-3xl shadow-[0_25px_50px_-15px_rgba(37,211,102,0.4)] hover:scale-[1.03] active:scale-95 transition-all bg-primary hover:bg-[#128C7E] text-white group" 
                   onClick={handleDownload} 
-                  disabled={isProcessing || !imageObj}
+                  disabled={!imageObj}
                 >
                   <Download className="w-8 h-8 md:w-10 md:h-10 group-hover:-translate-y-1 transition-transform" />
                   Download HD DP

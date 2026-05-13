@@ -1,11 +1,9 @@
-
 import { Header } from '@/components/Header';
 import { WhatsCropWorkspace } from '@/components/WhatsCropWorkspace';
 import { HowToSection } from '@/components/HowToSection';
 import { WhyUseSection } from '@/components/WhyUseSection';
 import { FaqSection } from '@/components/FaqSection';
 import { Footer } from '@/components/Footer';
-import { SamplesSection } from '@/components/SamplesSection';
 
 export default function Home() {
   return (
@@ -19,14 +17,13 @@ export default function Home() {
               WhatsApp Full <span className="text-primary">DP Maker</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-body">
-              Resize and enhance your photos to full size profile pictures without forced cropping. 100% free and HD quality.
+              Resize and prepare your photos for full-size profile pictures without forced cropping. 100% free and HD quality.
             </p>
           </div>
           
           <WhatsCropWorkspace />
         </section>
 
-        <SamplesSection />
         <HowToSection />
         <WhyUseSection />
         <FaqSection />

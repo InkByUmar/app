@@ -1,4 +1,4 @@
-import { Upload, Sliders, Sparkles, Download } from 'lucide-react';
+import { Upload, Sliders, Download } from 'lucide-react';
 
 const steps = [
   {
@@ -9,12 +9,7 @@ const steps = [
   {
     icon: Sliders,
     title: 'Pick a Style',
-    desc: 'Choose between Blur Background, Solid Color, or Auto-Fit.'
-  },
-  {
-    icon: Sparkles,
-    title: 'AI Enhancement',
-    desc: 'Optional: Use our AI tools to enhance clarity and generate backgrounds.'
+    desc: 'Choose between Blur Background, Solid Color, or Auto-Fit to frame your photo.'
   },
   {
     icon: Download,
@@ -31,7 +26,7 @@ export function HowToSection() {
           Simple <span className="text-primary">3-Step</span> Process
         </h2>
         
-        <div className="grid md:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-3 gap-8">
           {steps.map((step, i) => (
             <div key={i} className="relative p-8 bg-white rounded-3xl shadow-xl shadow-black/[0.03] border border-border/40 text-center hover:scale-105 transition-transform">
               <div className="absolute -top-4 -left-4 w-12 h-12 bg-primary text-white flex items-center justify-center rounded-2xl font-bold shadow-lg shadow-primary/20 text-xl">
