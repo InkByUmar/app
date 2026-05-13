@@ -23,7 +23,7 @@
     --border: 210 18% 90%;
     --input: 210 18% 90%;
     --ring: 142 70% 49%;
-    --radius: 1rem;
+    --radius: 1.5rem;
   }
 }
 
@@ -32,24 +32,42 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground selection:bg-primary selection:text-primary-foreground;
+    @apply bg-[#F7F9FA] text-foreground selection:bg-primary selection:text-primary-foreground font-body antialiased;
   }
 }
 
 .workspace-shadow {
-  box-shadow: 0 10px 40px -10px rgba(37, 211, 102, 0.15);
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.08);
 }
 
-.circle-mask::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  box-shadow: 0 0 0 9999px rgba(255, 255, 255, 0.7);
-  pointer-events: none;
-  border: 2px dashed rgba(37, 211, 102, 0.5);
+.premium-card-shadow {
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04);
 }
 
 .whatsapp-gradient {
   background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+}
+
+.glass-effect {
+  @apply bg-white/80 backdrop-blur-md border border-white/20;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom scrollbar for better look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-secondary/50;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-colors;
 }
