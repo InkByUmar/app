@@ -28,7 +28,7 @@ export default function Home() {
         <HowToSection />
         
         {/* AD Position 3: After How To section */}
-        <NativeAd className="bg-white py-12" />
+        <NativeAd className="bg-white py-4" />
 
         <WhyUseSection />
         
@@ -55,7 +55,7 @@ export default function Home() {
         <FaqSection />
         
         {/* AD Position 4: Before Footer (after FAQ) */}
-        <NativeAd className="bg-secondary/10 py-16" />
+        <NativeAd className="bg-secondary/10 py-4" />
       </main>
 
       <Footer />
