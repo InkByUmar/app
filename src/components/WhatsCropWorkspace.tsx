@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { NativeAd } from '@/components/NativeAd';
 
 type EditMode = 'blur' | 'solid' | 'fit' | 'manual';
 type PreviewMode = 'square' | 'circle';
@@ -205,27 +206,31 @@ export function WhatsCropWorkspace() {
     <div className="max-w-7xl mx-auto w-full px-4 mb-20">
       <Card className="workspace-shadow border-none bg-white overflow-hidden rounded-[2.5rem] md:rounded-[3rem]">
         {!image ? (
-          <div 
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            className="p-12 md:p-40 flex flex-col items-center justify-center text-center cursor-pointer bg-secondary/10 hover:bg-primary/5 transition-all group relative overflow-hidden"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full -ml-32 -mb-32 blur-3xl" />
+          <>
+            <div 
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              className="p-12 md:p-40 flex flex-col items-center justify-center text-center cursor-pointer bg-secondary/10 hover:bg-primary/5 transition-all group relative overflow-hidden"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full -ml-32 -mb-32 blur-3xl" />
 
-            <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
-            <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-500 z-10">
-              <Upload className="w-12 h-12 md:w-16 md:h-16 text-primary" />
+              <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
+              <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-500 z-10">
+                <Upload className="w-12 h-12 md:w-16 md:h-16 text-primary" />
+              </div>
+              <h3 className="text-3xl md:text-5xl font-headline font-bold mb-4 text-[#111B21] z-10">Create your Full DP</h3>
+              <p className="text-muted-foreground mb-10 max-w-sm text-base md:text-xl font-medium z-10">
+                Drag and drop your photo here, or tap to browse your gallery.
+              </p>
+              <Button size="lg" className="rounded-full px-12 md:px-20 h-16 md:h-20 text-lg md:text-2xl font-bold bg-primary hover:bg-[#128C7E] text-white shadow-xl shadow-primary/30 z-10 transition-all hover:scale-105">
+                Select Photo
+              </Button>
             </div>
-            <h3 className="text-3xl md:text-5xl font-headline font-bold mb-4 text-[#111B21] z-10">Create your Full DP</h3>
-            <p className="text-muted-foreground mb-10 max-w-sm text-base md:text-xl font-medium z-10">
-              Drag and drop your photo here, or tap to browse your gallery.
-            </p>
-            <Button size="lg" className="rounded-full px-12 md:px-20 h-16 md:h-20 text-lg md:text-2xl font-bold bg-primary hover:bg-[#128C7E] text-white shadow-xl shadow-primary/30 z-10 transition-all hover:scale-105">
-              Select Photo
-            </Button>
-          </div>
+            {/* AD Position 1: Just below upload button area */}
+            <NativeAd className="px-6 border-t border-secondary/10" />
+          </>
         ) : (
           <div className="flex flex-col xl:flex-row">
             {/* Preview Section */}
@@ -296,6 +301,9 @@ export function WhatsCropWorkspace() {
                     <Move className="w-4 h-4 text-primary" /> Drag image to adjust center
                   </p>
                 </div>
+                
+                {/* AD Position 2: Below the preview area */}
+                <NativeAd className="mt-4" />
               </div>
 
               <div className="absolute top-6 right-6 flex gap-3">

@@ -4,6 +4,7 @@ import { HowToSection } from '@/components/HowToSection';
 import { WhyUseSection } from '@/components/WhyUseSection';
 import { FaqSection } from '@/components/FaqSection';
 import { Footer } from '@/components/Footer';
+import { NativeAd } from '@/components/NativeAd';
 
 export default function Home() {
   return (
@@ -25,6 +26,10 @@ export default function Home() {
         </section>
 
         <HowToSection />
+        
+        {/* AD Position 3: After How To section */}
+        <NativeAd className="bg-white py-12" />
+
         <WhyUseSection />
         
         {/* Informative Content Section for SEO */}
@@ -35,7 +40,7 @@ export default function Home() {
               Have you ever tried to set a beautiful portrait or landscape photo as your WhatsApp profile picture, only to find that WhatsApp forces you to crop it into a square? It can be frustrating to lose half of your favorite memories just to fit a profile frame. That's where <strong className="font-bold text-primary">WhatsQuality</strong> comes in.
             </p>
             <p className="text-muted-foreground mb-4">
-              Our <strong className="font-bold text-[#111B21]">WhatsApp DP Maker</strong> uses advanced canvas processing to intelligently fit your entire photo into the circular WhatsApp frame. By adding a stylish blurred background or a solid color, we ensure that your original image remains 100% intact and visible.
+              Our <strong className="font-bold text-[#111B21]">WhatsApp DP Maker</strong> uses advanced canvas processing to intelligently fit your entire photo into the circular frame. By adding a stylish blurred background or a solid color, we ensure that your original image remains 100% intact and visible.
             </p>
             <h3 className="text-2xl font-headline font-bold text-[#111B21] mt-8 mb-4">Why is WhatsQuality the Best WhatsApp DP Maker?</h3>
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
@@ -48,6 +53,9 @@ export default function Home() {
         </section>
 
         <FaqSection />
+        
+        {/* AD Position 4: Before Footer (after FAQ) */}
+        <NativeAd className="bg-secondary/10 py-16" />
       </main>
 
       <Footer />
