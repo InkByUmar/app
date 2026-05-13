@@ -167,13 +167,17 @@ export function WhatsCropWorkspace() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    drawProcessedView(ctx, 1080, 1080, previewMode, true);
+    // Always draw as square for export as per requirement
+    drawProcessedView(ctx, 1080, 1080, 'square', true);
     
     const link = document.createElement('a');
-    link.download = `whatsapp-${previewMode}-dp.png`;
+    link.download = `whatsquality-hd-dp.png`;
     link.href = canvas.toDataURL('image/png', 1.0);
     link.click();
-    toast({ title: 'Success!', description: `Your 1080x1080 HD ${previewMode === 'circle' ? 'Circular' : 'Square'} Profile Picture has been saved.` });
+    toast({ 
+      title: 'Success!', 
+      description: `Your 1080x1080 HD Square Profile Picture has been saved.` 
+    });
   };
 
   // Mouse Handlers
