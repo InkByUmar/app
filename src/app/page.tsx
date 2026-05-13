@@ -27,9 +27,6 @@ export default function Home() {
 
         <HowToSection />
         
-        {/* AD Position 3: After How To section */}
-        <NativeAd className="bg-white py-4" />
-
         <WhyUseSection />
         
         {/* Informative Content Section for SEO */}
