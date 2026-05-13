@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X, Download, Sparkles, ImageIcon, Palette, Maximize, ZoomIn, ZoomOut, Circle, Layout, Move } from 'lucide-react';
+import { Upload, X, Download, Sparkles, ImageIcon, Palette, Maximize, ZoomIn, ZoomOut, Circle, Layout, Move, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -12,6 +12,7 @@ import { generateBlurredBackground } from '@/ai/flows/generate-blurred-backgroun
 import { cn } from '@/lib/utils';
 
 type EditMode = 'blur' | 'solid' | 'fit' | 'manual';
+type PreviewMode = 'square' | 'circle';
 
 export function WhatsCropWorkspace() {
   const [image, setImage] = useState<string | null>(null);
@@ -19,6 +20,7 @@ export function WhatsCropWorkspace() {
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mode, setMode] = useState<EditMode>('blur');
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('circle');
   const [blurIntensity, setBlurIntensity] = useState(30);
   const [bgColor, setBgColor] = useState('#FFFFFF');
   const [zoom, setZoom] = useState(100);
@@ -74,42 +76,21 @@ export function WhatsCropWorkspace() {
     }
   };
 
-  const drawRectView = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  const drawProcessedView = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, shape: 'square' | 'circle', isExport: boolean = false) => {
     if (!imageObj) return;
     ctx.clearRect(0, 0, width, height);
-    
-    // Draw original image centered
-    const imgAspect = imageObj.width / imageObj.height;
-    let drawW, drawH;
-    if (imgAspect > 1) {
-      drawW = width;
-      drawH = width / imgAspect;
-    } else {
-      drawH = height;
-      drawW = height * imgAspect;
-    }
-    
+
+    const scaleFactor = isExport ? 1080 / 450 : 1;
+    const canvasW = width;
+    const canvasH = height;
+
+    // 1. Draw Background (Blur or Solid)
     ctx.save();
-    const finalScale = (zoom / 100);
-    const scaledW = drawW * finalScale;
-    const scaledH = drawH * finalScale;
-    
-    const centerX = width / 2 + position.x;
-    const centerY = height / 2 + position.y;
-
-    ctx.drawImage(imageObj, centerX - scaledW / 2, centerY - scaledH / 2, scaledW, scaledH);
-    ctx.restore();
-  }, [imageObj, zoom, position]);
-
-  const drawCircleView = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, isExport: boolean = false) => {
-    if (!imageObj) return;
-    ctx.clearRect(0, 0, width, height);
-
-    // 1. Draw Background
     if (mode === 'solid') {
       ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, width, height);
-    } else if (mode === 'blur' || mode === 'fit' || mode === 'manual') {
+      ctx.fillRect(0, 0, canvasW, canvasH);
+    } else {
+      // Blur mode (or fit/manual which use blurred bg by default here)
       ctx.save();
       if (mode === 'blur') {
         ctx.filter = `blur(${isExport ? blurIntensity * 1.5 : blurIntensity}px)`;
@@ -117,55 +98,53 @@ export function WhatsCropWorkspace() {
       const imgAspect = imageObj.width / imageObj.height;
       let bgW, bgH;
       if (imgAspect > 1) {
-        bgH = height;
-        bgW = height * imgAspect;
+        bgH = canvasH;
+        bgW = canvasH * imgAspect;
       } else {
-        bgW = width;
-        bgH = width / imgAspect;
+        bgW = canvasW;
+        bgH = canvasW / imgAspect;
       }
-      ctx.drawImage(imageObj, (width - bgW) / 2, (height - bgH) / 2, bgW, bgH);
+      ctx.drawImage(imageObj, (canvasW - bgW) / 2, (canvasH - bgH) / 2, bgW, bgH);
       ctx.restore();
     }
+    ctx.restore();
 
-    // 2. Draw Subject
+    // 2. Draw Main Subject
     ctx.save();
-    const baseScale = mode === 'fit' ? Math.min(width / imageObj.width, height / imageObj.height) : (mode === 'manual' ? 0.8 : Math.max(width / imageObj.width, height / imageObj.height));
+    const baseScale = mode === 'fit' ? Math.min(canvasW / imageObj.width, canvasH / imageObj.height) : (mode === 'manual' ? 0.8 : Math.max(canvasW / imageObj.width, canvasH / imageObj.height));
     const finalScale = baseScale * (zoom / 100);
     const drawW = imageObj.width * finalScale;
     const drawH = imageObj.height * finalScale;
     
-    const scaleFactor = isExport ? 1080 / 450 : 1;
-    const centerX = width / 2 + position.x * scaleFactor;
-    const centerY = height / 2 + position.y * scaleFactor;
+    const centerX = canvasW / 2 + position.x * scaleFactor;
+    const centerY = canvasH / 2 + position.y * scaleFactor;
 
     ctx.drawImage(imageObj, centerX - drawW / 2, centerY - drawH / 2, drawW, drawH);
     ctx.restore();
 
-    // 3. Draw Mask Overlay (Circular) - only for non-export
-    if (!isExport) {
+    // 3. Apply Shape Mask (Circular)
+    if (shape === 'circle' && !isExport) {
       ctx.save();
       ctx.globalCompositeOperation = 'destination-in';
       ctx.beginPath();
-      ctx.arc(width / 2, height / 2, width / 2, 0, Math.PI * 2);
+      ctx.arc(canvasW / 2, canvasH / 2, canvasW / 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
   }, [imageObj, mode, blurIntensity, bgColor, zoom, position]);
 
   useEffect(() => {
-    const rectCanvas = rectCanvasRef.current;
-    const circleCanvas = circleCanvasRef.current;
     if (imageObj) {
-      if (rectCanvas) {
-        const ctx = rectCanvas.getContext('2d');
-        if (ctx) drawRectView(ctx, rectCanvas.width, rectCanvas.height);
+      if (rectCanvasRef.current) {
+        const ctx = rectCanvasRef.current.getContext('2d');
+        if (ctx) drawProcessedView(ctx, 450, 450, 'square');
       }
-      if (circleCanvas) {
-        const ctx = circleCanvas.getContext('2d');
-        if (ctx) drawCircleView(ctx, circleCanvas.width, circleCanvas.height);
+      if (circleCanvasRef.current) {
+        const ctx = circleCanvasRef.current.getContext('2d');
+        if (ctx) drawProcessedView(ctx, 450, 450, 'circle');
       }
     }
-  }, [drawRectView, drawCircleView, imageObj, mode, blurIntensity, bgColor, zoom, position]);
+  }, [drawProcessedView, imageObj]);
 
   const handleEnhance = async () => {
     if (!image) return;
@@ -202,12 +181,15 @@ export function WhatsCropWorkspace() {
     canvas.height = 1080;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCircleView(ctx, 1080, 1080, true);
+    // Export 1080x1080 (Square for processing, but can be masked if user wants circle specifically)
+    // Most users wanting a "WhatsApp DP" need a 1080x1080 square image that fits the circle.
+    drawProcessedView(ctx, 1080, 1080, 'square', true);
+    
     const link = document.createElement('a');
     link.download = 'whatsapp-hd-dp.png';
     link.href = canvas.toDataURL('image/png', 1.0);
     link.click();
-    toast({ title: 'Success!', description: 'Your HD Profile Picture has been saved.' });
+    toast({ title: 'Success!', description: 'Your 1080x1080 HD Profile Picture has been saved.' });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -245,39 +227,64 @@ export function WhatsCropWorkspace() {
           </div>
         ) : (
           <div className="flex flex-col xl:flex-row">
-            <div className="flex-grow p-6 md:p-12 bg-[#F7F9FA] flex flex-col items-center gap-12 relative min-h-[600px]">
+            <div className="flex-grow p-6 md:p-12 bg-[#F7F9FA] flex flex-col items-center gap-8 relative min-h-[600px]">
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-                {/* Rectangular View (Original) */}
-                <div className="flex flex-col items-center gap-4">
-                   <div className="flex items-center gap-2 mb-2 text-[#111B21]/60 font-bold uppercase tracking-widest text-xs">
-                     <Layout className="w-4 h-4" /> Original Image
-                   </div>
-                   <div 
-                    className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-[2rem] cursor-move border-4 border-white"
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
+              <div className="flex flex-col items-center gap-6 w-full max-w-5xl">
+                {/* View Switcher Toggle */}
+                <div className="flex p-1 bg-white rounded-2xl shadow-sm border border-border">
+                  <Button 
+                    variant={previewMode === 'square' ? 'default' : 'ghost'} 
+                    onClick={() => setPreviewMode('square')}
+                    className={cn("rounded-xl px-6 gap-2", previewMode === 'square' && "bg-primary text-white hover:bg-primary/90")}
                   >
-                    <canvas ref={rectCanvasRef} width={450} height={450} className="w-full h-full" />
-                  </div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">Drag to move photo</p>
+                    <Square className="w-4 h-4" /> Square View
+                  </Button>
+                  <Button 
+                    variant={previewMode === 'circle' ? 'default' : 'ghost'} 
+                    onClick={() => setPreviewMode('circle')}
+                    className={cn("rounded-xl px-6 gap-2", previewMode === 'circle' && "bg-primary text-white hover:bg-primary/90")}
+                  >
+                    <Circle className="w-4 h-4" /> Circle View
+                  </Button>
                 </div>
 
-                {/* Circular View (WhatsApp DP) */}
-                <div className="flex flex-col items-center gap-4">
-                   <div className="flex items-center gap-2 mb-2 text-primary font-bold uppercase tracking-widest text-xs">
-                     <Circle className="w-4 h-4" /> WhatsApp DP Preview
-                   </div>
-                   <div 
-                    className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-full border-4 border-white"
-                  >
-                    <canvas ref={circleCanvasRef} width={450} height={450} className="w-full h-full" />
-                    <div className="absolute inset-0 pointer-events-none border-[12px] border-white/10 rounded-full" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+                  {/* Square Preview (Always Square Processed) */}
+                  <div className={cn("flex flex-col items-center gap-4 transition-all duration-500", previewMode !== 'square' && "opacity-40 scale-95 hidden md:flex")}>
+                    <div className="flex items-center gap-2 mb-2 text-[#111B21]/60 font-bold uppercase tracking-widest text-xs">
+                      <Layout className="w-4 h-4" /> Square Result
+                    </div>
+                    <div 
+                      className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-[2rem] cursor-move border-4 border-white"
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      <canvas ref={rectCanvasRef} width={450} height={450} className="w-full h-full" />
+                    </div>
                   </div>
-                  <p className="text-xs text-primary font-bold uppercase tracking-tight animate-pulse-soft">Final Result Preview</p>
+
+                  {/* Circle Preview (Always Circular Processed) */}
+                  <div className={cn("flex flex-col items-center gap-4 transition-all duration-500", previewMode !== 'circle' && "opacity-40 scale-95 hidden md:flex")}>
+                    <div className="flex items-center gap-2 mb-2 text-primary font-bold uppercase tracking-widest text-xs">
+                      <Circle className="w-4 h-4" /> WhatsApp DP Preview
+                    </div>
+                    <div 
+                      className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-full border-4 border-white cursor-move"
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      <canvas ref={circleCanvasRef} width={450} height={450} className="w-full h-full" />
+                    </div>
+                  </div>
                 </div>
+
+                <p className="text-sm text-muted-foreground font-semibold flex items-center gap-2">
+                  <Move className="w-4 h-4" /> Drag to adjust framing
+                </p>
               </div>
 
               <div className="absolute top-6 right-6 flex gap-3">
@@ -287,10 +294,10 @@ export function WhatsCropWorkspace() {
               </div>
             </div>
 
-            <div className="w-full xl:w-[450px] border-t xl:border-t-0 xl:border-l p-10 flex flex-col gap-12 bg-white">
+            <div className="w-full xl:w-[450px] border-t xl:border-t-0 xl:border-l p-10 flex flex-col gap-10 bg-white">
               <div>
                 <h4 className="text-xs font-bold text-[#111B21]/40 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-primary" /> Select Background Style
+                  <ImageIcon className="w-4 h-4 text-primary" /> Background Style
                 </h4>
                 <Tabs value={mode} onValueChange={(v) => setMode(v as EditMode)} className="w-full">
                   <TabsList className="grid grid-cols-2 gap-4 bg-transparent h-auto p-0">
@@ -350,7 +357,7 @@ export function WhatsCropWorkspace() {
                 </div>
               )}
 
-              <div className="space-y-8">
+              <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ZoomIn className="w-5 h-5 text-primary" />
@@ -360,12 +367,12 @@ export function WhatsCropWorkspace() {
                 </div>
                 <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={10} max={400} className="py-2" />
                 <div className="flex gap-4">
-                  <Button variant="secondary" className="flex-1 rounded-2xl h-12 bg-secondary/50 font-bold" onClick={() => setZoom(Math.max(10, zoom - 20))}><ZoomOut className="w-4 h-4 mr-2" /> Zoom Out</Button>
-                  <Button variant="secondary" className="flex-1 rounded-2xl h-12 bg-secondary/50 font-bold" onClick={() => setZoom(Math.min(400, zoom + 20))}><ZoomIn className="w-4 h-4 mr-2" /> Zoom In</Button>
+                  <Button variant="secondary" className="flex-1 rounded-2xl h-12 bg-secondary/50 font-bold" onClick={() => setZoom(Math.max(10, zoom - 20))}><ZoomOut className="w-4 h-4 mr-2" /> Out</Button>
+                  <Button variant="secondary" className="flex-1 rounded-2xl h-12 bg-secondary/50 font-bold" onClick={() => setZoom(Math.min(400, zoom + 20))}><ZoomIn className="w-4 h-4 mr-2" /> In</Button>
                 </div>
               </div>
 
-              <div className="mt-auto pt-10 flex flex-col gap-4">
+              <div className="mt-auto pt-4 flex flex-col gap-4">
                 <Button variant="outline" className="w-full gap-2 py-8 border-primary/20 text-[#128C7E] hover:bg-[#128C7E]/5 rounded-[1.5rem] font-bold text-lg transition-all" onClick={handleEnhance} disabled={isProcessing}>
                   <Sparkles className="w-6 h-6" />
                   {isProcessing ? 'Enhancing to HD...' : 'AI HD Enhancement'}
@@ -378,10 +385,10 @@ export function WhatsCropWorkspace() {
                 <div className="flex flex-col items-center gap-2 mt-4">
                   <div className="flex items-center gap-2 text-[10px] text-[#111B21]/40 font-bold uppercase tracking-[0.2em]">
                     <span className="w-2 h-2 bg-primary rounded-full animate-pulse-soft" />
-                    Premium 1080px Quality
+                    Ultra HD 1080px Quality
                   </div>
                   <p className="text-[10px] text-muted-foreground font-medium text-center">
-                    Instant Download • No Watermark • High Res
+                    Instant Download • No Watermark • Clean Result
                   </p>
                 </div>
               </div>
