@@ -28,6 +28,10 @@ export function WhatsCropWorkspace() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  // Pinch zoom tracking
+  const initialPinchDistanceRef = useRef<number | null>(null);
+  const initialZoomRef = useRef<number>(100);
 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,8 +136,8 @@ export function WhatsCropWorkspace() {
     ctx.drawImage(imageObj, centerX - drawW / 2, centerY - drawH / 2, drawW, drawH);
     ctx.restore();
 
-    // 3. Apply Shape Mask
-    if (shape === 'circle') {
+    // 3. Apply Shape Mask (Only for UI previews, not exported image)
+    if (shape === 'circle' && !isExport) {
       ctx.save();
       ctx.globalCompositeOperation = 'destination-in';
       ctx.beginPath();
@@ -192,19 +196,58 @@ export function WhatsCropWorkspace() {
   };
   const handleMouseUp = () => setIsDragging(false);
 
-  // Touch Handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
-    const touch = e.touches[0];
-    setDragStart({ x: touch.clientX - position.x, y: touch.clientY - position.y });
+  // Wheel Handler for Desktop Zoom
+  const handleWheel = (e: React.WheelEvent) => {
+    // Only zoom if interacting with the canvas
+    const zoomSpeed = 0.5;
+    const delta = -e.deltaY;
+    setZoom((prev) => {
+      const nextZoom = prev + (delta * (zoomSpeed / 10));
+      return Math.min(400, Math.max(10, nextZoom));
+    });
   };
+
+  // Touch Handlers for Pinch Zoom and Drag
+  const getDistance = (touches: React.TouchList) => {
+    return Math.hypot(
+      touches[0].clientX - touches[1].clientX,
+      touches[0].clientY - touches[1].clientY
+    );
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      // Initialize pinch zoom
+      setIsDragging(false); // Stop dragging when pinching
+      const dist = getDistance(e.touches);
+      initialPinchDistanceRef.current = dist;
+      initialZoomRef.current = zoom;
+    } else if (e.touches.length === 1) {
+      // Initialize drag
+      setIsDragging(true);
+      const touch = e.touches[0];
+      setDragStart({ x: touch.clientX - position.x, y: touch.clientY - position.y });
+    }
+  };
+
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (isDragging) {
+    if (e.touches.length === 2 && initialPinchDistanceRef.current !== null) {
+      // Handle pinch zoom
+      const currentDist = getDistance(e.touches);
+      const scale = currentDist / initialPinchDistanceRef.current;
+      const nextZoom = initialZoomRef.current * scale;
+      setZoom(Math.min(400, Math.max(10, nextZoom)));
+    } else if (e.touches.length === 1 && isDragging) {
+      // Handle drag
       const touch = e.touches[0];
       setPosition({ x: touch.clientX - dragStart.x, y: touch.clientY - dragStart.y });
     }
   };
-  const handleTouchEnd = () => setIsDragging(false);
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    initialPinchDistanceRef.current = null;
+  };
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 mb-20">
@@ -265,7 +308,7 @@ export function WhatsCropWorkspace() {
                         <Layout className="w-4 h-4 text-primary" /> 1:1 HD Square Preview
                       </div>
                       <div 
-                        className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-[2.5rem] cursor-move border-8 border-white group"
+                        className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-[2.5rem] cursor-move border-8 border-white group touch-none"
                         onMouseDown={handleMouseDown}
                         onMouseMove={handleMouseMove}
                         onMouseUp={handleMouseUp}
@@ -273,6 +316,7 @@ export function WhatsCropWorkspace() {
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
+                        onWheel={handleWheel}
                       >
                         <canvas ref={rectCanvasRef} width={450} height={450} className="w-full h-full" />
                         <div className="absolute inset-0 border-2 border-dashed border-primary/20 rounded-[2rem] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -284,7 +328,7 @@ export function WhatsCropWorkspace() {
                         <Circle className="w-4 h-4" /> WhatsApp Circle Preview
                       </div>
                       <div 
-                        className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-full border-8 border-white cursor-move group"
+                        className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-full border-8 border-white cursor-move group touch-none"
                         onMouseDown={handleMouseDown}
                         onMouseMove={handleMouseMove}
                         onMouseUp={handleMouseUp}
@@ -292,6 +336,7 @@ export function WhatsCropWorkspace() {
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
+                        onWheel={handleWheel}
                       >
                         <canvas ref={circleCanvasRef} width={450} height={450} className="w-full h-full" />
                         <div className="absolute inset-0 rounded-full ring-2 ring-dashed ring-primary/40 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -302,7 +347,7 @@ export function WhatsCropWorkspace() {
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
                   <p className="text-sm text-muted-foreground font-semibold flex items-center justify-center gap-2 bg-white/60 px-6 py-3 rounded-full border border-white/50 backdrop-blur-sm shadow-sm">
-                    <Move className="w-4 h-4 text-primary" /> Drag image to adjust center
+                    <Move className="w-4 h-4 text-primary" /> Drag or Pinch to adjust
                   </p>
                 </div>
                 
