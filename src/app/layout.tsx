@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Create a full size WhatsApp DP without cropping. WhatsQuality is the best HD WhatsApp profile picture maker to resize and fit photos perfectly. 100% Free.',
   keywords: 'WhatsApp DP Maker, WhatsApp Full DP, HD WhatsApp DP, Full Size WhatsApp DP without cropping, WhatsApp Profile Picture Maker, WhatsApp DP without cropping, Best WhatsApp DP maker',
   verification: {
-    google: '3WwAf-XMxfYwO7_meXqlBvIjQBUhYaOCxkhCwJrtFJU',
+    google: 'vMj1XN9ziXyU5kBso8wdA_OhZuzhD0o_BGSrSu9uiGU',
   },
 };
 
