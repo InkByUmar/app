@@ -1,28 +1,27 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 144 14% 7%;
-    --foreground: 0 0% 98%;
-    --card: 144 14% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 144 14% 10%;
-    --popover-foreground: 0 0% 98%;
+    --background: 0 0% 100%;
+    --foreground: 200 31% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 200 31% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 31% 10%;
     --primary: 142 70% 49%;
-    --primary-foreground: 144 14% 7%;
-    --secondary: 144 14% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 144 14% 15%;
-    --muted-foreground: 144 14% 65%;
-    --accent: 100 75% 65%;
-    --accent-foreground: 144 14% 7%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 18% 96%;
+    --secondary-foreground: 200 31% 15%;
+    --muted: 210 18% 96%;
+    --muted-foreground: 200 10% 45%;
+    --accent: 142 70% 49%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 144 14% 18%;
-    --input: 144 14% 18%;
+    --border: 210 18% 90%;
+    --input: 210 18% 90%;
     --ring: 142 70% 49%;
     --radius: 1rem;
   }
@@ -38,7 +37,7 @@
 }
 
 .workspace-shadow {
-  box-shadow: 0 0 80px -20px rgba(37, 211, 102, 0.15);
+  box-shadow: 0 10px 40px -10px rgba(37, 211, 102, 0.15);
 }
 
 .circle-mask::after {
@@ -46,6 +45,11 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 9999px rgba(255, 255, 255, 0.7);
   pointer-events: none;
+  border: 2px dashed rgba(37, 211, 102, 0.5);
+}
+
+.whatsapp-gradient {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
 }

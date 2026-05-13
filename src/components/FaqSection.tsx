@@ -1,4 +1,3 @@
-
 import {
   Accordion,
   AccordionContent,
@@ -33,13 +32,13 @@ export function FaqSection() {
   return (
     <section id="faq" className="py-24 px-4 bg-secondary/10">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl md:text-5xl font-headline font-bold text-center mb-16">Common <span className="text-primary">Questions</span></h2>
+        <h2 className="text-3xl md:text-5xl font-headline font-bold text-center mb-16 text-[#111B21]">Common <span className="text-primary">Questions</span></h2>
         
         <Accordion type="single" collapsible className="w-full space-y-4">
           {faqs.map((faq, i) => (
-            <AccordionItem key={i} value={`item-${i}`} className="border border-border/50 bg-card rounded-2xl px-6">
-              <AccordionTrigger className="hover:no-underline font-headline text-lg py-6">{faq.q}</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
+            <AccordionItem key={i} value={`item-${i}`} className="border-none bg-white rounded-3xl px-8 shadow-sm">
+              <AccordionTrigger className="hover:no-underline font-headline font-bold text-xl py-6 text-[#111B21]">{faq.q}</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground pb-8 text-lg leading-relaxed">
                 {faq.a}
               </AccordionContent>
             </AccordionItem>
