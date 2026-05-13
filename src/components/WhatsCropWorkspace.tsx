@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X, SlidersHorizontal, Download, Sparkles, Image as ImageIcon, Palette, Maximize, MousePointer2 } from 'lucide-react';
+import { Upload, X, Download, Sparkles, ImageIcon, Palette, Maximize, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -16,21 +16,34 @@ type EditMode = 'blur' | 'solid' | 'fit' | 'manual';
 
 export function WhatsCropWorkspace() {
   const [image, setImage] = useState<string | null>(null);
+  const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mode, setMode] = useState<EditMode>('blur');
-  const [blurIntensity, setBlurIntensity] = useState(20);
+  const [blurIntensity, setBlurIntensity] = useState(25);
   const [bgColor, setBgColor] = useState('#111613');
   const [zoom, setZoom] = useState(100);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [showPreview, setShowPreview] = useState(true);
+  const [showGuide, setShowGuide] = useState(true);
 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Load image object when image data changes
+  useEffect(() => {
+    if (image || processedImage) {
+      const img = new Image();
+      img.src = processedImage || image || '';
+      img.onload = () => setImageObj(img);
+    } else {
+      setImageObj(null);
+    }
+  }, [image, processedImage]);
+
+  // Handle file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -66,6 +79,73 @@ export function WhatsCropWorkspace() {
     }
   };
 
+  const drawWorkspace = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, isExport: boolean = false) => {
+    if (!imageObj) return;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // 1. Draw Background
+    if (mode === 'solid') {
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, width, height);
+    } else if (mode === 'blur' || mode === 'fit') {
+      // Draw blurred background
+      ctx.save();
+      if (mode === 'blur') {
+        ctx.filter = `blur(${isExport ? blurIntensity * 1.5 : blurIntensity}px)`;
+      }
+      
+      // Background should always cover the square
+      const imgAspect = imageObj.width / imageObj.height;
+      let drawW, drawH;
+      if (imgAspect > 1) {
+        drawH = height;
+        drawW = height * imgAspect;
+      } else {
+        drawW = width;
+        drawH = width / imgAspect;
+      }
+      ctx.drawImage(imageObj, (width - drawW) / 2, (height - drawH) / 2, drawW, drawH);
+      ctx.restore();
+    }
+
+    // 2. Draw Main Image with Zoom and Pan
+    ctx.save();
+    
+    // Scale factor based on user zoom and workspace size
+    const baseScale = mode === 'fit' ? Math.min(width / imageObj.width, height / imageObj.height) : Math.max(width / imageObj.width, height / imageObj.height);
+    const finalScale = baseScale * (zoom / 100);
+    
+    const drawW = imageObj.width * finalScale;
+    const drawH = imageObj.height * finalScale;
+    
+    // Position handling
+    // Coordinates are relative to center of workspace
+    const centerX = width / 2 + (position.x * (isExport ? 1080 / 450 : 1));
+    const centerY = height / 2 + (position.y * (isExport ? 1080 / 450 : 1));
+
+    ctx.drawImage(
+      imageObj,
+      centerX - drawW / 2,
+      centerY - drawH / 2,
+      drawW,
+      drawH
+    );
+    
+    ctx.restore();
+  }, [imageObj, mode, blurIntensity, bgColor, zoom, position]);
+
+  // Update preview canvas
+  useEffect(() => {
+    const canvas = previewCanvasRef.current;
+    if (canvas && imageObj) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        drawWorkspace(ctx, canvas.width, canvas.height);
+      }
+    }
+  }, [drawWorkspace, imageObj, mode, blurIntensity, bgColor, zoom, position]);
+
   const handleEnhance = async () => {
     if (!image) return;
     setIsProcessing(true);
@@ -95,35 +175,22 @@ export function WhatsCropWorkspace() {
   };
 
   const handleDownload = () => {
-    if (!image) return;
+    if (!imageObj) return;
+    
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
     canvas.height = 1080;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Fill background
-    if (mode === 'solid') {
-      ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, 1080, 1080);
-    }
-
-    const img = new Image();
-    img.src = processedImage || image;
-    img.onload = () => {
-      // Simplistic drawing for demonstration
-      // In a full app, we'd handle the zoom/pan/blur precisely here
-      const size = 1080 * (zoom / 100);
-      const offsetX = (1080 - size) / 2 + (position.x * 10.8);
-      const offsetY = (1080 - size) / 2 + (position.y * 10.8);
-      
-      ctx.drawImage(img, offsetX, offsetY, size, size);
-      
-      const link = document.createElement('a');
-      link.download = 'whatscrop-dp.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    };
+    drawWorkspace(ctx, 1080, 1080, true);
+    
+    const link = document.createElement('a');
+    link.download = 'whatscrop-hd-dp.png';
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+    
+    toast({ title: 'Downloaded!', description: 'Your HD Profile Picture is ready.' });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -171,41 +238,22 @@ export function WhatsCropWorkspace() {
         ) : (
           <div className="flex flex-col lg:flex-row">
             {/* Editor Workspace */}
-            <div className="flex-grow p-4 md:p-8 bg-black/40 flex items-center justify-center relative min-h-[400px]">
+            <div className="flex-grow p-4 md:p-8 bg-black/40 flex items-center justify-center relative min-h-[450px]">
               <div 
-                ref={canvasRef}
                 className={cn(
-                  "relative w-[300px] h-[300px] md:w-[450px] md:h-[450px] bg-secondary rounded-lg overflow-hidden cursor-move",
-                  showPreview && "circle-mask"
+                  "relative w-[300px] h-[300px] md:w-[450px] md:h-[450px] bg-secondary shadow-2xl overflow-hidden cursor-move rounded-xl",
+                  showGuide && "circle-mask"
                 )}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
-                style={{ backgroundColor: mode === 'solid' ? bgColor : undefined }}
               >
-                {/* Background (only for blur mode if implemented client-side) */}
-                {mode === 'blur' && (
-                  <img 
-                    src={processedImage || image} 
-                    alt="background blur" 
-                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110"
-                  />
-                )}
-                
-                <img 
-                  src={processedImage || image} 
-                  alt="Work"
-                  draggable={false}
-                  className="absolute pointer-events-none transition-transform duration-75"
-                  style={{
-                    transform: `translate(${position.x}px, ${position.y}px) scale(${zoom / 100})`,
-                    left: '0',
-                    top: '0',
-                    width: '100%',
-                    height: '100%',
-                    objectFit: mode === 'fit' ? 'contain' : 'cover'
-                  }}
+                <canvas 
+                  ref={previewCanvasRef}
+                  width={450}
+                  height={450}
+                  className="w-full h-full"
                 />
               </div>
 
@@ -214,26 +262,34 @@ export function WhatsCropWorkspace() {
                 <Button 
                   variant="secondary" 
                   size="sm" 
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="rounded-full"
+                  onClick={() => setShowGuide(!showGuide)}
+                  className="rounded-full bg-background/50 backdrop-blur-sm border-none"
                 >
-                  {showPreview ? 'Hide Circle' : 'Show Circle'}
+                  {showGuide ? 'Hide Guide' : 'Show Guide'}
                 </Button>
                 <Button 
                   variant="destructive" 
                   size="icon" 
-                  onClick={() => setImage(null)}
+                  onClick={() => {
+                    setImage(null);
+                    setProcessedImage(null);
+                    setImageObj(null);
+                  }}
                   className="rounded-full"
                 >
                   <X className="w-4 h-4" />
                 </Button>
+              </div>
+              
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/50 font-medium">
+                Drag to position • Scroll or use slider to zoom
               </div>
             </div>
 
             {/* Sidebar Controls */}
             <div className="w-full lg:w-[350px] border-t lg:border-t-0 lg:border-l p-6 flex flex-col gap-8 bg-card">
               <div>
-                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">DP Style</h4>
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Background Style</h4>
                 <Tabs value={mode} onValueChange={(v) => setMode(v as EditMode)} className="w-full">
                   <TabsList className="grid grid-cols-2 gap-2 bg-transparent h-auto p-0">
                     <TabsTrigger value="blur" className="data-[state=active]:bg-primary data-[state=active]:text-background py-3 flex flex-col gap-1 border border-border">
@@ -294,49 +350,66 @@ export function WhatsCropWorkspace() {
                         onClick={() => setBgColor(color)}
                       />
                     ))}
-                    <input 
-                      type="color" 
-                      value={bgColor} 
-                      onChange={(e) => setBgColor(e.target.value)}
-                      className="w-8 h-8 rounded-full border-none p-0 overflow-hidden cursor-pointer"
-                    />
+                    <div className="relative">
+                      <input 
+                        type="color" 
+                        value={bgColor} 
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="w-8 h-8 rounded-full border-none p-0 overflow-hidden cursor-pointer opacity-0 absolute inset-0"
+                      />
+                      <div className="w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground flex items-center justify-center">
+                        <Palette className="w-3 h-3" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Zoom</label>
-                  <span className="text-xs text-muted-foreground">{zoom}%</span>
+                  <div className="flex items-center gap-2">
+                    <ZoomIn className="w-4 h-4 text-muted-foreground" />
+                    <label className="text-sm font-medium">Image Zoom</label>
+                  </div>
+                  <span className="text-xs font-mono text-primary">{zoom}%</span>
                 </div>
                 <Slider 
                   value={[zoom]} 
                   onValueChange={([v]) => setZoom(v)} 
                   min={10} 
-                  max={300} 
+                  max={400} 
                 />
+                <div className="flex justify-between">
+                  <Button variant="ghost" size="icon" onClick={() => setZoom(Math.max(10, zoom - 10))} className="h-8 w-8">
+                    <ZoomOut className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => setZoom(Math.min(400, zoom + 10))} className="h-8 w-8">
+                    <ZoomIn className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="mt-auto pt-6 flex flex-col gap-3">
                 <Button 
                   variant="outline" 
-                  className="w-full gap-2 py-6 border-accent/20 text-accent hover:bg-accent/10"
+                  className="w-full gap-2 py-6 border-accent/20 text-accent hover:bg-accent/10 transition-all hover:scale-[1.02]"
                   onClick={handleEnhance}
                   disabled={isProcessing}
                 >
                   <Sparkles className="w-4 h-4" />
-                  {isProcessing ? 'Enhancing...' : 'AI HD Enhancement'}
+                  {isProcessing ? 'Processing AI...' : 'AI HD Enhancement'}
                 </Button>
                 <Button 
-                  className="w-full gap-2 py-6 text-md font-bold rounded-xl"
+                  className="w-full gap-2 py-7 text-lg font-bold rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
                   onClick={handleDownload}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !imageObj}
                 >
                   <Download className="w-5 h-5" />
                   Download 1080x1080 HD
                 </Button>
-                <p className="text-[10px] text-center text-muted-foreground italic">
-                  Processed locally. No watermark added.
+                <p className="text-[10px] text-center text-muted-foreground font-medium flex items-center justify-center gap-1">
+                  <span className="w-1 h-1 bg-primary rounded-full animate-pulse" />
+                  Processed locally. No watermark. No data storage.
                 </p>
               </div>
             </div>
