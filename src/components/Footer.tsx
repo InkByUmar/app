@@ -9,7 +9,7 @@ export function Footer() {
             <Camera className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-headline font-bold tracking-tight text-[#111B21]">
-            Whats<span className="text-primary">Crop</span>
+            Whats<span className="text-primary">Quality</span>
           </span>
         </div>
 
@@ -33,7 +33,7 @@ export function Footer() {
         </div>
 
         <p className="text-sm text-muted-foreground text-center font-medium">
-          &copy; {new Date().getFullYear()} WhatsCrop. All rights reserved. <br className="md:hidden" />
+          &copy; {new Date().getFullYear()} WhatsQuality. All rights reserved. <br className="md:hidden" />
           Designed for the global WhatsApp community 💚
         </p>
       </div>

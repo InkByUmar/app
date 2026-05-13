@@ -23,7 +23,7 @@ export function WhyUseSection() {
     <section id="why-use" className="py-24 px-4 bg-white">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20">
-          <h2 className="text-3xl md:text-5xl font-headline font-bold mb-6 text-[#111B21]">Why Choose <span className="text-primary">WhatsCrop?</span></h2>
+          <h2 className="text-3xl md:text-5xl font-headline font-bold mb-6 text-[#111B21]">Why Choose <span className="text-primary">WhatsQuality?</span></h2>
           <p className="text-muted-foreground text-xl max-w-2xl mx-auto font-medium">
             The simplest tool for your WhatsApp Profile Picture.
           </p>

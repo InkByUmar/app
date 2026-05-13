@@ -9,7 +9,7 @@ export function Header() {
             <Camera className="w-5 h-5 text-white" />
           </div>
           <span className="text-xl font-headline font-bold tracking-tight text-[#111B21]">
-            Whats<span className="text-primary">Crop</span>
+            Whats<span className="text-primary">Quality</span>
           </span>
         </div>
         

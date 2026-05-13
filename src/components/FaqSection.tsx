@@ -7,8 +7,8 @@ import {
 
 const faqs = [
   {
-    q: "Is WhatsCrop really free?",
-    a: "Yes, WhatsCrop is 100% free to use. There are no subscriptions, hidden fees, or watermarks on your downloaded images."
+    q: "Is WhatsQuality really free?",
+    a: "Yes, WhatsQuality is 100% free to use. There are no subscriptions, hidden fees, or watermarks on your downloaded images."
   },
   {
     q: "What is the recommended size for a WhatsApp DP?",
@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     q: "Will I lose image quality?",
-    a: "No! In fact, you can use our built-in AI HD Enhancement tool to improve the quality of your photos before downloading."
+    a: "No! We process your images with high-quality canvas rendering to ensure your 1080x1080 export looks sharp on all displays."
   },
   {
     q: "How does the 'No Crop' feature work?",

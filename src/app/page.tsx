@@ -17,7 +17,7 @@ export default function Home() {
               WhatsApp Full <span className="text-primary">DP Maker</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-body">
-              Resize and prepare your photos for full-size profile pictures without forced cropping. 100% free and HD quality.
+              WhatsApp Full DP Maker: Resize & Enhance to Full Size DP Without Cropping
             </p>
           </div>
           

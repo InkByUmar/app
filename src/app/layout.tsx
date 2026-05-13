@@ -3,8 +3,8 @@ import './globals.css';
 import {Toaster} from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Full DP Maker - HD Profile Picture Without Cropping',
-  description: 'Create perfect full-size WhatsApp profile pictures without cropping. Free HD DP maker with AI enhancement and background blur.',
+  title: 'WhatsQuality - WhatsApp Full DP Maker - HD Profile Picture Without Cropping',
+  description: 'Create perfect full-size WhatsApp profile pictures without cropping. Free HD DP maker with background blur.',
 };
 
 export default function RootLayout({
