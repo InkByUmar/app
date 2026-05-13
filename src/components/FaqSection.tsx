@@ -12,35 +12,35 @@ const faqs = [
   },
   {
     q: "Is WhatsQuality the best WhatsApp DP maker?",
-    a: "Yes! WhatsQuality offers 1080x1080 HD export, complete privacy, no watermarks, and a completely free experience, making it the top choice for users globally."
+    a: "Yes! WhatsQuality offers 1080x1080 HD export, complete privacy, no watermarks, and a completely free experience, making it the top choice for users globally seeking a high-quality WhatsApp profile picture maker."
   },
   {
     q: "Will my HD WhatsApp DP look blurry after using this tool?",
-    a: "Not at all. We export all profile pictures in high-definition 1080x1080px resolution, ensuring your photo looks sharp and clear on all smartphone screens."
+    a: "Not at all. We export all profile pictures in high-definition 1080x1080px resolution, ensuring your photo looks sharp and clear on all smartphone screens. It is the perfect solution for an HD WhatsApp DP."
   },
   {
     q: "Is it safe to use this WhatsApp profile picture maker?",
-    a: "Absolutely. Unlike other apps, WhatsQuality processes your images locally in your browser. Your photos are never uploaded to any server, ensuring 100% privacy."
+    a: "Absolutely. Unlike other apps, WhatsQuality processes your images locally in your browser. Your photos are never uploaded to any server, ensuring 100% privacy while you create your WhatsApp full DP."
   },
   {
     q: "What is the recommended size for a WhatsApp DP?",
-    a: "WhatsApp uses a 1:1 square ratio. For the best result on modern high-res displays, we recommend 1080x1080 pixels, which is exactly what our tool provides."
+    a: "WhatsApp uses a 1:1 square ratio. For the best result on modern high-res displays, we recommend 1080x1080 pixels, which is exactly what our WhatsApp DP maker provides for every export."
   },
   {
     q: "Does WhatsQuality add watermarks to my photos?",
-    a: "No. WhatsQuality is 100% free and we never add watermarks to your downloaded images. You get a clean, professional profile picture every time."
+    a: "No. WhatsQuality is 100% free and we never add watermarks to your downloaded images. You get a clean, professional full size WhatsApp DP without cropping every time."
   },
   {
     q: "Can I use this for other social media platforms like Instagram?",
-    a: "Yes! The 1080x1080 square format we provide is perfect for Instagram profile pictures, Telegram, Facebook, and many other social platforms."
+    a: "Yes! The 1080x1080 square format we provide is perfect for Instagram profile pictures, Telegram, Facebook, and many other social platforms, not just as a WhatsApp DP maker."
   },
   {
     q: "How much does it cost to use WhatsQuality?",
-    a: "WhatsQuality is completely free to use. We don't have any hidden fees, subscriptions, or 'premium' features. Everything is accessible for everyone."
+    a: "WhatsQuality is completely free to use. We don't have any hidden fees, subscriptions, or 'premium' features. Everything is accessible for everyone looking for a free WhatsApp DP without cropping."
   },
   {
     q: "Can I adjust the background color of my WhatsApp DP?",
-    a: "Yes, you can choose between a blurred version of your original photo or select any solid color from our palette (or a custom hex code) to match your style."
+    a: "Yes, you can choose between a blurred version of your original photo or select any solid color from our palette (or a custom hex code) to match your style perfectly."
   },
   {
     q: "How do I download the final HD WhatsApp DP?",
@@ -52,7 +52,7 @@ export function FaqSection() {
   return (
     <section id="faq" className="py-24 px-4 bg-secondary/10">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl md:text-5xl font-headline font-bold text-center mb-16 text-[#111B21]">Common <span className="text-primary">Questions</span></h2>
+        <h2 className="text-3xl md:text-5xl font-headline font-bold text-center mb-16 text-[#111B21]">Common <span className="text-primary">Questions</span> about WhatsApp DP</h2>
         
         <Accordion type="single" collapsible className="w-full space-y-4">
           {faqs.map((faq, i) => (
