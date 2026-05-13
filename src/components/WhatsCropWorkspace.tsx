@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X, Download, Sparkles, ImageIcon, Palette, Maximize, MousePointer2, ZoomIn, ZoomOut, Circle, Eye, EyeOff, Layout } from 'lucide-react';
+import { Upload, X, Download, Sparkles, ImageIcon, Palette, Maximize, ZoomIn, ZoomOut, Circle, Layout, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -19,7 +19,6 @@ export function WhatsCropWorkspace() {
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mode, setMode] = useState<EditMode>('blur');
-  const [isCircleMode, setIsCircleMode] = useState(false); // false = Rectangular, true = Circular
   const [blurIntensity, setBlurIntensity] = useState(30);
   const [bgColor, setBgColor] = useState('#FFFFFF');
   const [zoom, setZoom] = useState(100);
@@ -29,7 +28,8 @@ export function WhatsCropWorkspace() {
 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const rectCanvasRef = useRef<HTMLCanvasElement>(null);
+  const circleCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (image || processedImage) {
@@ -37,8 +37,6 @@ export function WhatsCropWorkspace() {
       img.src = processedImage || image || '';
       img.onload = () => {
         setImageObj(img);
-        // Default to rectangular view on fresh upload
-        if (!processedImage) setIsCircleMode(false);
       };
     } else {
       setImageObj(null);
@@ -58,7 +56,6 @@ export function WhatsCropWorkspace() {
         setProcessedImage(null);
         setPosition({ x: 0, y: 0 });
         setZoom(100);
-        setIsCircleMode(false);
       };
       reader.readAsDataURL(file);
     }
@@ -72,35 +69,43 @@ export function WhatsCropWorkspace() {
       reader.onload = (event) => {
         setImage(event.target?.result as string);
         setProcessedImage(null);
-        setIsCircleMode(false);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const drawWorkspace = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, isExport: boolean = false, forceCircle: boolean = false) => {
+  const drawRectView = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     if (!imageObj) return;
+    ctx.clearRect(0, 0, width, height);
+    
+    // Draw original image centered
+    const imgAspect = imageObj.width / imageObj.height;
+    let drawW, drawH;
+    if (imgAspect > 1) {
+      drawW = width;
+      drawH = width / imgAspect;
+    } else {
+      drawH = height;
+      drawW = height * imgAspect;
+    }
+    
+    ctx.save();
+    const finalScale = (zoom / 100);
+    const scaledW = drawW * finalScale;
+    const scaledH = drawH * finalScale;
+    
+    const centerX = width / 2 + position.x;
+    const centerY = height / 2 + position.y;
 
-    const showAsCircle = forceCircle || isCircleMode;
+    ctx.drawImage(imageObj, centerX - scaledW / 2, centerY - scaledH / 2, scaledW, scaledH);
+    ctx.restore();
+  }, [imageObj, zoom, position]);
 
+  const drawCircleView = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, isExport: boolean = false) => {
+    if (!imageObj) return;
     ctx.clearRect(0, 0, width, height);
 
-    if (!showAsCircle && !isExport) {
-      // RECTANGULAR VIEW: Just show the original image fitted
-      const imgAspect = imageObj.width / imageObj.height;
-      let drawW, drawH;
-      if (imgAspect > 1) {
-        drawW = width;
-        drawH = width / imgAspect;
-      } else {
-        drawH = height;
-        drawW = height * imgAspect;
-      }
-      ctx.drawImage(imageObj, (width - drawW) / 2, (height - drawH) / 2, drawW, drawH);
-      return;
-    }
-
-    // CIRCULAR/EXPORT MODE: Full square composition with backgrounds
+    // 1. Draw Background
     if (mode === 'solid') {
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, width, height);
@@ -110,19 +115,19 @@ export function WhatsCropWorkspace() {
         ctx.filter = `blur(${isExport ? blurIntensity * 1.5 : blurIntensity}px)`;
       }
       const imgAspect = imageObj.width / imageObj.height;
-      let drawW, drawH;
+      let bgW, bgH;
       if (imgAspect > 1) {
-        drawH = height;
-        drawW = height * imgAspect;
+        bgH = height;
+        bgW = height * imgAspect;
       } else {
-        drawW = width;
-        drawH = width / imgAspect;
+        bgW = width;
+        bgH = width / imgAspect;
       }
-      ctx.drawImage(imageObj, (width - drawW) / 2, (height - drawH) / 2, drawW, drawH);
+      ctx.drawImage(imageObj, (width - bgW) / 2, (height - bgH) / 2, bgW, bgH);
       ctx.restore();
     }
 
-    // Draw the subject (the actual DP)
+    // 2. Draw Subject
     ctx.save();
     const baseScale = mode === 'fit' ? Math.min(width / imageObj.width, height / imageObj.height) : (mode === 'manual' ? 0.8 : Math.max(width / imageObj.width, height / imageObj.height));
     const finalScale = baseScale * (zoom / 100);
@@ -135,15 +140,32 @@ export function WhatsCropWorkspace() {
 
     ctx.drawImage(imageObj, centerX - drawW / 2, centerY - drawH / 2, drawW, drawH);
     ctx.restore();
-  }, [imageObj, mode, blurIntensity, bgColor, zoom, position, isCircleMode]);
+
+    // 3. Draw Mask Overlay (Circular) - only for non-export
+    if (!isExport) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.beginPath();
+      ctx.arc(width / 2, height / 2, width / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }, [imageObj, mode, blurIntensity, bgColor, zoom, position]);
 
   useEffect(() => {
-    const canvas = previewCanvasRef.current;
-    if (canvas && imageObj) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) drawWorkspace(ctx, canvas.width, canvas.height);
+    const rectCanvas = rectCanvasRef.current;
+    const circleCanvas = circleCanvasRef.current;
+    if (imageObj) {
+      if (rectCanvas) {
+        const ctx = rectCanvas.getContext('2d');
+        if (ctx) drawRectView(ctx, rectCanvas.width, rectCanvas.height);
+      }
+      if (circleCanvas) {
+        const ctx = circleCanvas.getContext('2d');
+        if (ctx) drawCircleView(ctx, circleCanvas.width, circleCanvas.height);
+      }
     }
-  }, [drawWorkspace, imageObj, mode, blurIntensity, bgColor, zoom, position, isCircleMode]);
+  }, [drawRectView, drawCircleView, imageObj, mode, blurIntensity, bgColor, zoom, position]);
 
   const handleEnhance = async () => {
     if (!image) return;
@@ -180,8 +202,7 @@ export function WhatsCropWorkspace() {
     canvas.height = 1080;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    // Download always draws the full square composition
-    drawWorkspace(ctx, 1080, 1080, true, true);
+    drawCircleView(ctx, 1080, 1080, true);
     const link = document.createElement('a');
     link.download = 'whatsapp-hd-dp.png';
     link.href = canvas.toDataURL('image/png', 1.0);
@@ -190,7 +211,6 @@ export function WhatsCropWorkspace() {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isCircleMode) return; // Dragging only in circle/edit mode
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
@@ -204,173 +224,164 @@ export function WhatsCropWorkspace() {
   const handleMouseUp = () => setIsDragging(false);
 
   return (
-    <div className="max-w-6xl mx-auto w-full px-4">
-      <Card className="workspace-shadow border-none bg-white overflow-hidden rounded-3xl">
+    <div className="max-w-7xl mx-auto w-full px-4">
+      <Card className="workspace-shadow border-none bg-white overflow-hidden rounded-[2.5rem]">
         {!image ? (
           <div 
             onDragOver={(e) => e.preventDefault()}
             onDrop={onDrop}
-            className="p-16 md:p-32 flex flex-col items-center justify-center text-center cursor-pointer bg-secondary/10 hover:bg-primary/5 transition-all group"
+            className="p-20 md:p-40 flex flex-col items-center justify-center text-center cursor-pointer bg-secondary/10 hover:bg-primary/5 transition-all group"
             onClick={() => fileInputRef.current?.click()}
           >
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
-            <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mb-8 shadow-xl shadow-primary/5 group-hover:scale-110 transition-transform">
-              <Upload className="w-12 h-12 text-primary" />
+            <div className="w-28 h-28 bg-white rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform">
+              <Upload className="w-14 h-14 text-primary" />
             </div>
-            <h3 className="text-3xl font-headline font-bold mb-4 text-[#111B21]">Create your Full DP</h3>
-            <p className="text-muted-foreground mb-8 max-w-sm text-lg font-medium">
+            <h3 className="text-4xl font-headline font-bold mb-4 text-[#111B21]">Create your Full DP</h3>
+            <p className="text-muted-foreground mb-10 max-w-sm text-lg font-medium">
               Drag and drop your photo here, or click to browse.
             </p>
-            <Button size="lg" className="rounded-full px-12 h-14 text-lg font-bold bg-primary hover:bg-[#128C7E] text-white shadow-lg shadow-primary/20">Select Photo</Button>
+            <Button size="lg" className="rounded-full px-16 h-16 text-xl font-bold bg-primary hover:bg-[#128C7E] text-white shadow-xl shadow-primary/30">Select Photo</Button>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row">
-            <div className="flex-grow p-6 md:p-12 bg-[#F0F2F5] flex flex-col items-center justify-center relative min-h-[500px]">
-              {/* Preview Toggle Button */}
-              <div className="absolute top-6 left-6 z-10">
-                <Button 
-                  onClick={() => setIsCircleMode(!isCircleMode)}
-                  className={cn(
-                    "rounded-full px-6 py-6 h-auto font-bold text-base shadow-lg transition-all flex items-center gap-2",
-                    isCircleMode 
-                      ? "bg-white text-primary border-2 border-primary hover:bg-primary/5" 
-                      : "bg-primary text-white hover:bg-[#128C7E]"
-                  )}
-                >
-                  {isCircleMode ? (
-                    <><Layout className="w-5 h-5" /> Switch to Rectangular View</>
-                  ) : (
-                    <><Circle className="w-5 h-5" /> Show WhatsApp DP Preview</>
-                  )}
-                </Button>
-              </div>
+          <div className="flex flex-col xl:flex-row">
+            <div className="flex-grow p-6 md:p-12 bg-[#F7F9FA] flex flex-col items-center gap-12 relative min-h-[600px]">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
+                {/* Rectangular View (Original) */}
+                <div className="flex flex-col items-center gap-4">
+                   <div className="flex items-center gap-2 mb-2 text-[#111B21]/60 font-bold uppercase tracking-widest text-xs">
+                     <Layout className="w-4 h-4" /> Original Image
+                   </div>
+                   <div 
+                    className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-[2rem] cursor-move border-4 border-white"
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                  >
+                    <canvas ref={rectCanvasRef} width={450} height={450} className="w-full h-full" />
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">Drag to move photo</p>
+                </div>
 
-              {/* Preview Canvas Container */}
-              <div 
-                className={cn(
-                  "relative w-[300px] h-[300px] md:w-[450px] md:h-[450px] bg-white shadow-2xl overflow-hidden transition-all duration-500 border-4 border-white",
-                  isCircleMode ? "rounded-full cursor-move circle-mask" : "rounded-2xl cursor-default"
-                )}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
-                <canvas ref={previewCanvasRef} width={450} height={450} className="w-full h-full" />
+                {/* Circular View (WhatsApp DP) */}
+                <div className="flex flex-col items-center gap-4">
+                   <div className="flex items-center gap-2 mb-2 text-primary font-bold uppercase tracking-widest text-xs">
+                     <Circle className="w-4 h-4" /> WhatsApp DP Preview
+                   </div>
+                   <div 
+                    className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-full border-4 border-white"
+                  >
+                    <canvas ref={circleCanvasRef} width={450} height={450} className="w-full h-full" />
+                    <div className="absolute inset-0 pointer-events-none border-[12px] border-white/10 rounded-full" />
+                  </div>
+                  <p className="text-xs text-primary font-bold uppercase tracking-tight animate-pulse-soft">Final Result Preview</p>
+                </div>
               </div>
 
               <div className="absolute top-6 right-6 flex gap-3">
-                <Button variant="outline" size="icon" onClick={() => { setImage(null); setProcessedImage(null); }} className="rounded-full bg-white/80 backdrop-blur-sm border-none shadow-lg text-destructive hover:bg-destructive/10">
-                  <X className="w-5 h-5" />
+                <Button variant="outline" size="icon" onClick={() => { setImage(null); setProcessedImage(null); }} className="rounded-full bg-white/80 backdrop-blur-sm border-none shadow-lg text-destructive hover:bg-destructive/10 h-12 w-12">
+                  <X className="w-6 h-6" />
                 </Button>
-              </div>
-              
-              <div className="mt-8 flex flex-col items-center gap-2">
-                <p className="px-6 py-2 bg-white/70 backdrop-blur-sm rounded-full text-xs text-[#111B21] font-bold uppercase tracking-widest">
-                  {isCircleMode ? "WhatsApp Profile Preview • Drag to Adjust" : "Original Photo View"}
-                </p>
-                {isCircleMode && (
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest animate-pulse">
-                    The circle shows how your DP will appear
-                  </p>
-                )}
               </div>
             </div>
 
-            <div className="w-full lg:w-[400px] border-t lg:border-t-0 lg:border-l p-8 flex flex-col gap-10 bg-white">
+            <div className="w-full xl:w-[450px] border-t xl:border-t-0 xl:border-l p-10 flex flex-col gap-12 bg-white">
               <div>
-                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6 flex items-center gap-2">
-                  <ImageIcon className="w-3 h-3 text-primary" /> DP Style Configuration
+                <h4 className="text-xs font-bold text-[#111B21]/40 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-primary" /> Select Background Style
                 </h4>
-                <Tabs value={mode} onValueChange={(v) => { setMode(v as EditMode); setIsCircleMode(true); }} className="w-full">
-                  <TabsList className="grid grid-cols-2 gap-3 bg-transparent h-auto p-0">
-                    <TabsTrigger value="blur" className="data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary py-4 flex flex-col gap-2 rounded-2xl border-2 bg-secondary/10 text-muted-foreground transition-all">
-                      <ImageIcon className="w-5 h-5" />
-                      <span className="text-[11px] font-bold">Crop with Blur</span>
+                <Tabs value={mode} onValueChange={(v) => setMode(v as EditMode)} className="w-full">
+                  <TabsList className="grid grid-cols-2 gap-4 bg-transparent h-auto p-0">
+                    <TabsTrigger value="blur" className="data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary py-5 flex flex-col gap-2 rounded-3xl border-2 bg-secondary/10 text-muted-foreground transition-all hover:border-primary/20">
+                      <ImageIcon className="w-6 h-6" />
+                      <span className="text-xs font-bold">Crop with Blur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="solid" className="data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary py-4 flex flex-col gap-2 rounded-2xl border-2 bg-secondary/10 text-muted-foreground transition-all">
-                      <Palette className="w-5 h-5" />
-                      <span className="text-[11px] font-bold">Crop with Color</span>
+                    <TabsTrigger value="solid" className="data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary py-5 flex flex-col gap-2 rounded-3xl border-2 bg-secondary/10 text-muted-foreground transition-all hover:border-primary/20">
+                      <Palette className="w-6 h-6" />
+                      <span className="text-xs font-bold">Crop with Color</span>
                     </TabsTrigger>
-                    <TabsTrigger value="fit" className="data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary py-4 flex flex-col gap-2 rounded-2xl border-2 bg-secondary/10 text-muted-foreground transition-all">
-                      <Maximize className="w-5 h-5" />
-                      <span className="text-[11px] font-bold">Crop by Resizing</span>
+                    <TabsTrigger value="fit" className="data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary py-5 flex flex-col gap-2 rounded-3xl border-2 bg-secondary/10 text-muted-foreground transition-all hover:border-primary/20">
+                      <Maximize className="w-6 h-6" />
+                      <span className="text-xs font-bold">Fit Full Size</span>
                     </TabsTrigger>
-                    <TabsTrigger value="manual" className="data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary py-4 flex flex-col gap-2 rounded-2xl border-2 bg-secondary/10 text-muted-foreground transition-all">
-                      <Circle className="w-5 h-5" />
-                      <span className="text-[11px] font-bold">Square Frame</span>
+                    <TabsTrigger value="manual" className="data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary py-5 flex flex-col gap-2 rounded-3xl border-2 bg-secondary/10 text-muted-foreground transition-all hover:border-primary/20">
+                      <Circle className="w-6 h-6" />
+                      <span className="text-xs font-bold">Manual Square</span>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
 
               {mode === 'blur' && (
-                <div className="space-y-6">
+                <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-bold text-[#111B21]">Blur Intensity</label>
-                    <span className="text-sm font-mono font-bold text-primary">{blurIntensity}%</span>
+                    <span className="text-sm font-mono font-bold text-primary px-3 py-1 bg-primary/5 rounded-lg">{blurIntensity}%</span>
                   </div>
-                  <Slider value={[blurIntensity]} onValueChange={([v]) => { setBlurIntensity(v); setIsCircleMode(true); }} max={100} className="py-2" />
-                  <Button variant="outline" className="w-full gap-2 py-6 border-primary/20 text-primary hover:bg-primary/5 rounded-2xl font-bold" onClick={() => { handleAIBlur(); setIsCircleMode(true); }} disabled={isProcessing}>
-                    <Sparkles className="w-4 h-4" />
-                    {isProcessing ? 'Processing...' : 'AI Smart Fill (Recommended)'}
+                  <Slider value={[blurIntensity]} onValueChange={([v]) => setBlurIntensity(v)} max={100} className="py-2" />
+                  <Button variant="outline" className="w-full gap-2 py-8 border-primary/20 text-primary hover:bg-primary/5 rounded-[1.5rem] font-bold text-base" onClick={handleAIBlur} disabled={isProcessing}>
+                    <Sparkles className="w-5 h-5" />
+                    {isProcessing ? 'Processing AI...' : 'AI Smart Background Fill'}
                   </Button>
                 </div>
               )}
 
               {mode === 'solid' && (
-                <div className="space-y-4">
+                <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
                   <label className="text-sm font-bold text-[#111B21]">Background Color</label>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid grid-cols-6 gap-3">
                     {['#FFFFFF', '#F0F2F5', '#25D366', '#128C7E', '#111B21', '#E7E9ED'].map((color) => (
                       <button
                         key={color}
-                        className={cn("w-10 h-10 rounded-full border-2 transition-all shadow-sm", bgColor === color ? "border-primary scale-110 ring-4 ring-primary/10" : "border-white")}
+                        className={cn("aspect-square rounded-full border-4 transition-all hover:scale-110", bgColor === color ? "border-primary shadow-lg shadow-primary/20" : "border-white shadow-sm")}
                         style={{ backgroundColor: color }}
-                        onClick={() => { setBgColor(color); setIsCircleMode(true); }}
+                        onClick={() => setBgColor(color)}
                       />
                     ))}
-                    <div className="relative">
-                      <input type="color" value={bgColor} onChange={(e) => { setBgColor(e.target.value); setIsCircleMode(true); }} className="w-10 h-10 rounded-full border-none p-0 overflow-hidden cursor-pointer opacity-0 absolute inset-0" />
-                      <div className="w-10 h-10 rounded-full border-2 border-dashed border-muted-foreground flex items-center justify-center bg-secondary/20">
-                        <Palette className="w-4 h-4 text-muted-foreground" />
+                    <div className="relative aspect-square">
+                      <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-full rounded-full border-none p-0 overflow-hidden cursor-pointer opacity-0 absolute inset-0" />
+                      <div className="w-full h-full rounded-full border-2 border-dashed border-muted-foreground flex items-center justify-center bg-secondary/20">
+                        <Palette className="w-5 h-5 text-muted-foreground" />
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <ZoomIn className="w-4 h-4 text-primary" />
+                    <ZoomIn className="w-5 h-5 text-primary" />
                     <label className="text-sm font-bold text-[#111B21]">Zoom Level</label>
                   </div>
-                  <span className="text-sm font-mono font-bold text-primary">{zoom}%</span>
+                  <span className="text-sm font-mono font-bold text-primary px-3 py-1 bg-primary/5 rounded-lg">{zoom}%</span>
                 </div>
-                <Slider value={[zoom]} onValueChange={([v]) => { setZoom(v); setIsCircleMode(true); }} min={10} max={400} className="py-2" />
+                <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={10} max={400} className="py-2" />
                 <div className="flex gap-4">
-                  <Button variant="secondary" className="flex-1 rounded-xl bg-secondary/50" onClick={() => { setZoom(Math.max(10, zoom - 20)); setIsCircleMode(true); }}><ZoomOut className="w-4 h-4 mr-2" /> Out</Button>
-                  <Button variant="secondary" className="flex-1 rounded-xl bg-secondary/50" onClick={() => { setZoom(Math.min(400, zoom + 20)); setIsCircleMode(true); }}><ZoomIn className="w-4 h-4 mr-2" /> In</Button>
+                  <Button variant="secondary" className="flex-1 rounded-2xl h-12 bg-secondary/50 font-bold" onClick={() => setZoom(Math.max(10, zoom - 20))}><ZoomOut className="w-4 h-4 mr-2" /> Zoom Out</Button>
+                  <Button variant="secondary" className="flex-1 rounded-2xl h-12 bg-secondary/50 font-bold" onClick={() => setZoom(Math.min(400, zoom + 20))}><ZoomIn className="w-4 h-4 mr-2" /> Zoom In</Button>
                 </div>
               </div>
 
-              <div className="mt-auto pt-6 flex flex-col gap-4">
-                <Button variant="outline" className="w-full gap-2 py-7 border-primary/20 text-[#128C7E] hover:bg-[#128C7E]/5 rounded-2xl font-bold text-base transition-all" onClick={handleEnhance} disabled={isProcessing}>
-                  <Sparkles className="w-5 h-5" />
+              <div className="mt-auto pt-10 flex flex-col gap-4">
+                <Button variant="outline" className="w-full gap-2 py-8 border-primary/20 text-[#128C7E] hover:bg-[#128C7E]/5 rounded-[1.5rem] font-bold text-lg transition-all" onClick={handleEnhance} disabled={isProcessing}>
+                  <Sparkles className="w-6 h-6" />
                   {isProcessing ? 'Enhancing to HD...' : 'AI HD Enhancement'}
                 </Button>
-                <Button className="w-full gap-3 py-8 text-xl font-bold rounded-2xl shadow-xl shadow-primary/30 hover:scale-[1.02] transition-all bg-primary hover:bg-[#128C7E] text-white" onClick={handleDownload} disabled={isProcessing || !imageObj}>
-                  <Download className="w-6 h-6" />
-                  Download 1080px HD
+                <Button className="w-full gap-4 py-10 text-2xl font-bold rounded-[1.5rem] shadow-[0_20px_40px_-15px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-[#128C7E] text-white" onClick={handleDownload} disabled={isProcessing || !imageObj}>
+                  <Download className="w-8 h-8" />
+                  Download HD DP
                 </Button>
-                <div className="flex flex-col items-center gap-1">
-                  <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest flex items-center gap-2">
-                    <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                    High Quality • No Watermark
-                  </p>
-                  <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter">
-                    Exported at high-resolution 1080 x 1080
+                
+                <div className="flex flex-col items-center gap-2 mt-4">
+                  <div className="flex items-center gap-2 text-[10px] text-[#111B21]/40 font-bold uppercase tracking-[0.2em]">
+                    <span className="w-2 h-2 bg-primary rounded-full animate-pulse-soft" />
+                    Premium 1080px Quality
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium text-center">
+                    Instant Download • No Watermark • High Res
                   </p>
                 </div>
               </div>
