@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "sample-1",
+      "description": "Travel Portrait",
+      "imageUrl": "https://picsum.photos/seed/dp1/800/800",
+      "imageHint": "travel person"
+    },
+    {
+      "id": "sample-2",
+      "description": "Nature Shot",
+      "imageUrl": "https://picsum.photos/seed/dp2/800/800",
+      "imageHint": "nature landscape"
+    },
+    {
+      "id": "sample-3",
+      "description": "Urban Style",
+      "imageUrl": "https://picsum.photos/seed/dp3/800/800",
+      "imageHint": "urban portrait"
+    },
+    {
+      "id": "sample-4",
+      "description": "Minimalist",
+      "imageUrl": "https://picsum.photos/seed/dp4/800/800",
+      "imageHint": "minimalist aesthetic"
+    }
+  ]
 }
