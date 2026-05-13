@@ -38,7 +38,8 @@ export function WhatsCropWorkspace() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setImage(event.target?.result as string);
+        const result = event.target?.result as string;
+        setImage(result);
         setProcessedImage(null);
         setZoom(100);
         setPosition({ x: 0, y: 0 });
@@ -47,18 +48,27 @@ export function WhatsCropWorkspace() {
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const file = e.dataTransfer.files?.[0];
-    if (file) {
+    if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setImage(event.target?.result as string);
+        const result = event.target?.result as string;
+        setImage(result);
         setProcessedImage(null);
         setZoom(100);
         setPosition({ x: 0, y: 0 });
       };
       reader.readAsDataURL(file);
+    } else {
+      toast({ variant: 'destructive', title: 'Invalid File', description: 'Please drop an image file.' });
     }
   };
 
@@ -89,15 +99,17 @@ export function WhatsCropWorkspace() {
       ctx.fillRect(0, 0, canvasW, canvasH);
     } else {
       ctx.save();
+      // Apply blur filter if mode is blur or fit (background fill)
       if (mode === 'blur' || mode === 'fit' || mode === 'manual') {
-        ctx.filter = `blur(${isExport ? blurIntensity * 1.5 : blurIntensity}px)`;
+        ctx.filter = `blur(${isExport ? blurIntensity * 2.4 : blurIntensity}px)`;
       }
       const imgAspect = imageObj.width / imageObj.height;
       let bgW, bgH;
-      if (imgAspect > 1) {
+      // Fill the square completely with the image
+      if (imgAspect > 1) { // Landscape
         bgH = canvasH;
         bgW = canvasH * imgAspect;
-      } else {
+      } else { // Portrait
         bgW = canvasW;
         bgH = canvasW / imgAspect;
       }
@@ -108,11 +120,13 @@ export function WhatsCropWorkspace() {
 
     // 2. Draw Main Subject
     ctx.save();
+    // In 'fit' mode, scale the image to touch edges of the square
     const baseScale = mode === 'fit' ? Math.min(canvasW / imageObj.width, canvasH / imageObj.height) : (mode === 'manual' ? 0.8 : Math.max(canvasW / imageObj.width, canvasH / imageObj.height));
     const finalScale = baseScale * (zoom / 100);
     const drawW = imageObj.width * finalScale;
     const drawH = imageObj.height * finalScale;
     
+    // Position adjustments
     const centerX = canvasW / 2 + position.x * (isExport ? scaleFactor : 1);
     const centerY = canvasH / 2 + position.y * (isExport ? scaleFactor : 1);
 
@@ -120,7 +134,7 @@ export function WhatsCropWorkspace() {
     ctx.restore();
 
     // 3. Apply Shape Mask (Circular)
-    if (shape === 'circle' && !isExport) {
+    if (shape === 'circle') {
       ctx.save();
       ctx.globalCompositeOperation = 'destination-in';
       ctx.beginPath();
@@ -130,18 +144,25 @@ export function WhatsCropWorkspace() {
     }
   }, [imageObj, mode, blurIntensity, bgColor, zoom, position]);
 
+  // Redraw when any adjustment state or view mode changes
   useEffect(() => {
     if (imageObj) {
-      if (rectCanvasRef.current) {
-        const ctx = rectCanvasRef.current.getContext('2d');
-        if (ctx) drawProcessedView(ctx, 450, 450, 'square');
-      }
-      if (circleCanvasRef.current) {
-        const ctx = circleCanvasRef.current.getContext('2d');
-        if (ctx) drawProcessedView(ctx, 450, 450, 'circle');
-      }
+      const render = () => {
+        if (previewMode === 'square' && rectCanvasRef.current) {
+          const ctx = rectCanvasRef.current.getContext('2d');
+          if (ctx) drawProcessedView(ctx, 450, 450, 'square');
+        }
+        if (previewMode === 'circle' && circleCanvasRef.current) {
+          const ctx = circleCanvasRef.current.getContext('2d');
+          if (ctx) drawProcessedView(ctx, 450, 450, 'circle');
+        }
+      };
+      
+      // Use requestAnimationFrame to ensure the canvas is mounted and ready for rendering
+      const rafId = requestAnimationFrame(render);
+      return () => cancelAnimationFrame(rafId);
     }
-  }, [drawProcessedView, imageObj]);
+  }, [drawProcessedView, imageObj, previewMode]);
 
   const handleEnhance = async () => {
     if (!image) return;
@@ -178,13 +199,15 @@ export function WhatsCropWorkspace() {
     canvas.height = 1080;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawProcessedView(ctx, 1080, 1080, 'square', true);
+    
+    // Download based on the CURRENT preview mode selected by the user
+    drawProcessedView(ctx, 1080, 1080, previewMode, true);
     
     const link = document.createElement('a');
-    link.download = 'whatsapp-hd-dp.png';
+    link.download = `whatsapp-${previewMode}-dp.png`;
     link.href = canvas.toDataURL('image/png', 1.0);
     link.click();
-    toast({ title: 'Success!', description: 'Your 1080x1080 HD Profile Picture has been saved.' });
+    toast({ title: 'Success!', description: `Your 1080x1080 HD ${previewMode === 'circle' ? 'Circular' : 'Square'} Profile Picture has been saved.` });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -205,7 +228,7 @@ export function WhatsCropWorkspace() {
       <Card className="workspace-shadow border-none bg-white overflow-hidden rounded-[2.5rem]">
         {!image ? (
           <div 
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={handleDragOver}
             onDrop={handleDrop}
             className="p-20 md:p-40 flex flex-col items-center justify-center text-center cursor-pointer bg-secondary/10 hover:bg-primary/5 transition-all group"
             onClick={() => fileInputRef.current?.click()}
@@ -244,7 +267,7 @@ export function WhatsCropWorkspace() {
                 </div>
 
                 <div className="w-full max-w-[450px]">
-                  {/* Square Preview */}
+                  {/* Square Preview - Only visible when square mode is active */}
                   {previewMode === 'square' && (
                     <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300">
                       <div className="flex items-center gap-2 mb-2 text-[#111B21]/60 font-bold uppercase tracking-widest text-xs">
@@ -262,7 +285,7 @@ export function WhatsCropWorkspace() {
                     </div>
                   )}
 
-                  {/* Circle Preview */}
+                  {/* Circle Preview - Only visible when circle mode is active */}
                   {previewMode === 'circle' && (
                     <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-300">
                       <div className="flex items-center gap-2 mb-2 text-primary font-bold uppercase tracking-widest text-xs">
