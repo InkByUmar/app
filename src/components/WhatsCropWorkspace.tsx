@@ -198,7 +198,6 @@ export function WhatsCropWorkspace() {
 
   // Wheel Handler for Desktop Zoom
   const handleWheel = (e: React.WheelEvent) => {
-    // Only zoom if interacting with the canvas
     const zoomSpeed = 0.5;
     const delta = -e.deltaY;
     setZoom((prev) => {
@@ -217,13 +216,11 @@ export function WhatsCropWorkspace() {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
-      // Initialize pinch zoom
-      setIsDragging(false); // Stop dragging when pinching
+      setIsDragging(false);
       const dist = getDistance(e.touches);
       initialPinchDistanceRef.current = dist;
       initialZoomRef.current = zoom;
     } else if (e.touches.length === 1) {
-      // Initialize drag
       setIsDragging(true);
       const touch = e.touches[0];
       setDragStart({ x: touch.clientX - position.x, y: touch.clientY - position.y });
@@ -232,13 +229,11 @@ export function WhatsCropWorkspace() {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 2 && initialPinchDistanceRef.current !== null) {
-      // Handle pinch zoom
       const currentDist = getDistance(e.touches);
       const scale = currentDist / initialPinchDistanceRef.current;
       const nextZoom = initialZoomRef.current * scale;
       setZoom(Math.min(400, Math.max(10, nextZoom)));
     } else if (e.touches.length === 1 && isDragging) {
-      // Handle drag
       const touch = e.touches[0];
       setPosition({ x: touch.clientX - dragStart.x, y: touch.clientY - dragStart.y });
     }
@@ -275,15 +270,14 @@ export function WhatsCropWorkspace() {
                 Select Photo
               </Button>
             </div>
-            {/* AD Position 1: Just below upload button area */}
             <NativeAd className="px-6 border-t border-secondary/10" />
           </>
         ) : (
           <div className="flex flex-col xl:flex-row">
             {/* Preview Section */}
-            <div className="flex-grow p-4 md:p-12 bg-[#F7F9FA] flex flex-col items-center gap-6 md:gap-10 relative min-h-[500px] md:min-h-[700px]">
+            <div className="flex-grow p-4 md:p-12 bg-[#F7F9FA] flex flex-col items-center gap-6 md:gap-8 relative min-h-[500px] md:min-h-[700px]">
               
-              <div className="flex flex-col items-center gap-6 md:gap-10 w-full max-w-2xl">
+              <div className="flex flex-col items-center gap-6 md:gap-8 w-full max-w-2xl">
                 <div className="flex p-1.5 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/50 w-full max-w-md">
                   <Button 
                     variant={previewMode === 'square' ? 'default' : 'ghost'} 
@@ -345,13 +339,40 @@ export function WhatsCropWorkspace() {
                   )}
                 </div>
 
+                {/* Scale/Zoom Controls Moved Directly Below Preview */}
+                <div className="w-full max-w-[450px] bg-white/60 backdrop-blur-sm p-6 rounded-[2rem] border border-white/50 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ZoomIn className="w-4 h-4 text-primary" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#111B21]/60">Scale Adjustment</span>
+                    </div>
+                    <span className="text-sm font-mono font-bold text-primary px-3 py-1 bg-primary/10 rounded-lg">{zoom}%</span>
+                  </div>
+                  <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={10} max={400} className="py-2" />
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="secondary" 
+                      className="flex-1 rounded-xl h-12 bg-white font-bold uppercase text-[10px] tracking-wider shadow-sm border border-black/[0.03]" 
+                      onClick={() => setZoom(Math.max(10, zoom - 10))}
+                    >
+                      <ZoomOut className="w-4 h-4 mr-2" /> Small
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      className="flex-1 rounded-xl h-12 bg-white font-bold uppercase text-[10px] tracking-wider shadow-sm border border-black/[0.03]" 
+                      onClick={() => setZoom(Math.min(400, zoom + 10))}
+                    >
+                      <ZoomIn className="w-4 h-4 mr-2" /> Large
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
                   <p className="text-sm text-muted-foreground font-semibold flex items-center justify-center gap-2 bg-white/60 px-6 py-3 rounded-full border border-white/50 backdrop-blur-sm shadow-sm">
                     <Move className="w-4 h-4 text-primary" /> Drag or Pinch to adjust
                   </p>
                 </div>
                 
-                {/* AD Position 2: Below the preview area */}
                 <NativeAd className="mt-4" />
               </div>
 
@@ -426,21 +447,6 @@ export function WhatsCropWorkspace() {
                     </div>
                   </div>
                 )}
-
-                <div className="space-y-6 animate-in fade-in duration-700">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <ZoomIn className="w-5 h-5 text-primary" />
-                      <label className="text-sm font-black text-[#111B21] uppercase tracking-wider">Scale Level</label>
-                    </div>
-                    <span className="text-sm font-mono font-bold text-primary px-3 py-1 bg-primary/10 rounded-lg">{zoom}%</span>
-                  </div>
-                  <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={10} max={400} className="py-2" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button variant="secondary" className="rounded-2xl h-12 md:h-14 bg-secondary font-black uppercase text-[10px] md:text-xs" onClick={() => setZoom(Math.max(10, zoom - 20))}><ZoomOut className="w-4 h-4 mr-2" /> Small</Button>
-                    <Button variant="secondary" className="rounded-2xl h-12 md:h-14 bg-secondary font-black uppercase text-[10px] md:text-xs" onClick={() => setZoom(Math.min(400, zoom + 20))}><ZoomIn className="w-4 h-4 mr-2" /> Large</Button>
-                  </div>
-                </div>
               </div>
 
               <div className="mt-auto space-y-4 pt-10">
