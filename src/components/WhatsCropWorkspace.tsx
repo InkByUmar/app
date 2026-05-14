@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Upload, X, Download, ImageIcon, Palette, 
-  Maximize, ZoomIn, ZoomOut, Circle, Layout, Move, Square,
+  Maximize, ZoomIn, Circle, Layout, Square,
   CheckCircle2, AlertCircle, Sun, Contrast, Droplets, SlidersHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -351,14 +351,6 @@ export function WhatsCropWorkspace() {
                   <span className="text-xs font-mono font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-md">{zoom}%</span>
                 </div>
                 <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={10} max={400} className="py-1" />
-                <div className="flex gap-2">
-                  <Button variant="secondary" className="flex-1 rounded-lg h-9 bg-white text-xs font-bold" onClick={() => setZoom(Math.max(10, zoom - 10))}>
-                    <ZoomOut className="w-3.5 h-3.5 mr-1.5" /> Smaller
-                  </Button>
-                  <Button variant="secondary" className="flex-1 rounded-lg h-9 bg-white text-xs font-bold" onClick={() => setZoom(Math.min(400, zoom + 10))}>
-                    <ZoomIn className="w-3.5 h-3.5 mr-1.5" /> Larger
-                  </Button>
-                </div>
               </div>
 
               {/* Tabs for Editing Modes - Compact */}
