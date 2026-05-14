@@ -5,12 +5,12 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Upload, X, Download, ImageIcon, Palette, 
   Maximize, ZoomIn, ZoomOut, Circle, Layout, Move, Square,
-  CheckCircle2, AlertCircle
+  CheckCircle2, AlertCircle, Sun, Contrast, Droplets, SlidersHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { NativeAd } from '@/components/NativeAd';
 
@@ -25,6 +25,9 @@ export function WhatsCropWorkspace() {
   const [blurIntensity, setBlurIntensity] = useState(30);
   const [bgColor, setBgColor] = useState('#FFFFFF');
   const [zoom, setZoom] = useState(100);
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [saturation, setSaturation] = useState(100);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -51,6 +54,9 @@ export function WhatsCropWorkspace() {
         setImage(result);
         setZoom(100);
         setPosition({ x: 0, y: 0 });
+        setBrightness(100);
+        setContrast(100);
+        setSaturation(100);
       };
       reader.readAsDataURL(file);
     }
@@ -105,9 +111,10 @@ export function WhatsCropWorkspace() {
       ctx.fillRect(0, 0, canvasW, canvasH);
     } else {
       ctx.save();
-      if (mode === 'blur' || mode === 'fit' || mode === 'manual') {
-        ctx.filter = `blur(${isExport ? blurIntensity * 2.4 : blurIntensity}px)`;
-      }
+      // Apply filters only to the blurred background if needed, or globally
+      const blurVal = isExport ? blurIntensity * 2.4 : blurIntensity;
+      ctx.filter = `blur(${blurVal}px) brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+      
       const imgAspect = imageObj.width / imageObj.height;
       let bgW, bgH;
       if (imgAspect > 1) {
@@ -124,6 +131,9 @@ export function WhatsCropWorkspace() {
 
     // 2. Draw Main Subject
     ctx.save();
+    // Apply brightness/contrast to main subject too
+    ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+    
     const baseScale = mode === 'fit' ? Math.min(canvasW / imageObj.width, canvasH / imageObj.height) : (mode === 'manual' ? 0.8 : Math.max(canvasW / imageObj.width, canvasH / imageObj.height));
     const finalScale = baseScale * (zoom / 100);
     const drawW = imageObj.width * finalScale;
@@ -145,7 +155,7 @@ export function WhatsCropWorkspace() {
       ctx.fill();
       ctx.restore();
     }
-  }, [imageObj, mode, blurIntensity, bgColor, zoom, position]);
+  }, [imageObj, mode, blurIntensity, bgColor, zoom, position, brightness, contrast, saturation]);
 
   useEffect(() => {
     if (imageObj) {
@@ -171,7 +181,7 @@ export function WhatsCropWorkspace() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // Always draw as square for export as per requirement
+    // Always draw as square for export
     drawProcessedView(ctx, 1080, 1080, 'square', true);
     
     const link = document.createElement('a');
@@ -184,7 +194,7 @@ export function WhatsCropWorkspace() {
     });
   };
 
-  // Mouse Handlers
+  // Interaction Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
@@ -196,7 +206,6 @@ export function WhatsCropWorkspace() {
   };
   const handleMouseUp = () => setIsDragging(false);
 
-  // Wheel Handler for Desktop Zoom
   const handleWheel = (e: React.WheelEvent) => {
     const zoomSpeed = 0.5;
     const delta = -e.deltaY;
@@ -206,7 +215,6 @@ export function WhatsCropWorkspace() {
     });
   };
 
-  // Touch Handlers for Pinch Zoom and Drag
   const getDistance = (touches: React.TouchList) => {
     return Math.hypot(
       touches[0].clientX - touches[1].clientX,
@@ -245,7 +253,7 @@ export function WhatsCropWorkspace() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-4 mb-20">
+    <div className="max-w-5xl mx-auto w-full px-4 mb-20">
       <Card className="workspace-shadow border-none bg-white overflow-hidden rounded-[2.5rem] md:rounded-[3rem]">
         {!image ? (
           <>
@@ -273,201 +281,213 @@ export function WhatsCropWorkspace() {
             <NativeAd className="px-6 border-t border-secondary/10" />
           </>
         ) : (
-          <div className="flex flex-col xl:flex-row">
-            {/* Preview Section */}
-            <div className="flex-grow p-4 md:p-12 bg-[#F7F9FA] flex flex-col items-center gap-6 md:gap-8 relative min-h-[500px] md:min-h-[700px]">
-              
-              <div className="flex flex-col items-center gap-6 md:gap-8 w-full max-w-2xl">
-                <div className="flex p-1.5 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/50 w-full max-w-md">
-                  <Button 
-                    variant={previewMode === 'square' ? 'default' : 'ghost'} 
-                    onClick={() => setPreviewMode('square')}
-                    className={cn("flex-1 rounded-xl px-4 gap-2 h-12 md:h-14 font-bold transition-all", previewMode === 'square' ? "bg-primary text-white shadow-lg" : "text-muted-foreground")}
-                  >
-                    <Square className="w-5 h-5" /> <span className="hidden sm:inline">Square View</span> <span className="sm:hidden">Square</span>
-                  </Button>
-                  <Button 
-                    variant={previewMode === 'circle' ? 'default' : 'ghost'} 
-                    onClick={() => setPreviewMode('circle')}
-                    className={cn("flex-1 rounded-xl px-4 gap-2 h-12 md:h-14 font-bold transition-all", previewMode === 'circle' ? "bg-primary text-white shadow-lg" : "text-muted-foreground")}
-                  >
-                    <Circle className="w-5 h-5" /> <span className="hidden sm:inline">Circle View</span> <span className="sm:hidden">Circle</span>
-                  </Button>
-                </div>
-
-                <div className="w-full max-w-[450px] relative">
-                  {previewMode === 'square' ? (
-                    <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-500">
-                      <div className="flex items-center gap-2 text-xs font-bold text-[#111B21]/40 uppercase tracking-widest mb-2">
-                        <Layout className="w-4 h-4 text-primary" /> 1:1 HD Square Preview
-                      </div>
-                      <div 
-                        className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-[2.5rem] cursor-move border-8 border-white group touch-none"
-                        onMouseDown={handleMouseDown}
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseUp}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                        onWheel={handleWheel}
-                      >
-                        <canvas ref={rectCanvasRef} width={450} height={450} className="w-full h-full" />
-                        <div className="absolute inset-0 border-2 border-dashed border-primary/20 rounded-[2rem] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-500">
-                      <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest mb-2">
-                        <Circle className="w-4 h-4" /> WhatsApp Circle Preview
-                      </div>
-                      <div 
-                        className="relative w-full aspect-square bg-white shadow-2xl overflow-hidden rounded-full border-8 border-white cursor-move group touch-none"
-                        onMouseDown={handleMouseDown}
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseUp}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                        onWheel={handleWheel}
-                      >
-                        <canvas ref={circleCanvasRef} width={450} height={450} className="w-full h-full" />
-                        <div className="absolute inset-0 rounded-full ring-2 ring-dashed ring-primary/40 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Scale/Zoom Controls Moved Directly Below Preview */}
-                <div className="w-full max-w-[450px] bg-white/60 backdrop-blur-sm p-6 rounded-[2rem] border border-white/50 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ZoomIn className="w-4 h-4 text-primary" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-[#111B21]/60">Scale Adjustment</span>
-                    </div>
-                    <span className="text-sm font-mono font-bold text-primary px-3 py-1 bg-primary/10 rounded-lg">{zoom}%</span>
-                  </div>
-                  <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={10} max={400} className="py-2" />
-                  <div className="flex gap-3">
-                    <Button 
-                      variant="secondary" 
-                      className="flex-1 rounded-xl h-12 bg-white font-bold uppercase text-[10px] tracking-wider shadow-sm border border-black/[0.03]" 
-                      onClick={() => setZoom(Math.max(10, zoom - 10))}
-                    >
-                      <ZoomOut className="w-4 h-4 mr-2" /> Small
-                    </Button>
-                    <Button 
-                      variant="secondary" 
-                      className="flex-1 rounded-xl h-12 bg-white font-bold uppercase text-[10px] tracking-wider shadow-sm border border-black/[0.03]" 
-                      onClick={() => setZoom(Math.min(400, zoom + 10))}
-                    >
-                      <ZoomIn className="w-4 h-4 mr-2" /> Large
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-                  <p className="text-sm text-muted-foreground font-semibold flex items-center justify-center gap-2 bg-white/60 px-6 py-3 rounded-full border border-white/50 backdrop-blur-sm shadow-sm">
-                    <Move className="w-4 h-4 text-primary" /> Drag or Pinch to adjust
-                  </p>
-                </div>
-                
-                <NativeAd className="mt-4" />
-              </div>
-
-              <div className="absolute top-6 right-6 flex gap-3">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => { setImage(null); setImageObj(null); }} 
-                  className="rounded-2xl bg-white/80 backdrop-blur-sm border-none shadow-xl text-destructive hover:bg-destructive hover:text-white h-12 w-12 transition-all hover:rotate-90"
-                >
-                  <X className="w-6 h-6" />
-                </Button>
-              </div>
+          <div className="flex flex-col items-center p-6 md:p-12 gap-8">
+            {/* 1. View Selection Toggles */}
+            <div className="flex p-1.5 bg-secondary/20 backdrop-blur-md rounded-2xl shadow-inner w-full max-w-md mx-auto">
+              <Button 
+                variant={previewMode === 'square' ? 'default' : 'ghost'} 
+                onClick={() => setPreviewMode('square')}
+                className={cn("flex-1 rounded-xl px-4 gap-2 h-12 font-bold transition-all", previewMode === 'square' ? "bg-primary text-white shadow-lg" : "text-muted-foreground")}
+              >
+                <Square className="w-5 h-5" /> <span>Square View</span>
+              </Button>
+              <Button 
+                variant={previewMode === 'circle' ? 'default' : 'ghost'} 
+                onClick={() => setPreviewMode('circle')}
+                className={cn("flex-1 rounded-xl px-4 gap-2 h-12 font-bold transition-all", previewMode === 'circle' ? "bg-primary text-white shadow-lg" : "text-muted-foreground")}
+              >
+                <Circle className="w-5 h-5" /> <span>Circle View</span>
+              </Button>
             </div>
 
-            <div className="w-full xl:w-[500px] border-t xl:border-t-0 xl:border-l p-6 md:p-12 flex flex-col gap-10 bg-white">
-              <div className="space-y-6">
-                <h4 className="text-xs font-black text-[#111B21]/30 uppercase tracking-[0.3em] flex items-center gap-3">
-                  <ImageIcon className="w-4 h-4 text-primary" /> Background Treatment
-                </h4>
-                <Tabs value={mode} onValueChange={(v) => setMode(v as EditMode)} className="w-full">
-                  <TabsList className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-transparent h-auto p-0">
-                    <TabsTrigger value="blur" className="data-[state=active]:bg-primary data-[state=active]:text-white py-4 md:py-6 flex flex-col gap-2 rounded-2xl md:rounded-3xl border-2 bg-secondary/20 transition-all hover:border-primary/30">
-                      <ImageIcon className="w-5 h-5 md:w-6 md:h-6" />
-                      <span className="text-[10px] md:text-xs font-black uppercase">Blur</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="solid" className="data-[state=active]:bg-primary data-[state=active]:text-white py-4 md:py-6 flex flex-col gap-2 rounded-2xl md:rounded-3xl border-2 bg-secondary/20 transition-all hover:border-primary/30">
-                      <Palette className="w-5 h-5 md:w-6 md:h-6" />
-                      <span className="text-[10px] md:text-xs font-black uppercase">Color</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="fit" className="data-[state=active]:bg-primary data-[state=active]:text-white py-4 md:py-6 flex flex-col gap-2 rounded-2xl md:rounded-3xl border-2 bg-secondary/20 transition-all hover:border-primary/30">
-                      <Maximize className="w-5 h-5 md:w-6 md:h-6" />
-                      <span className="text-[10px] md:text-xs font-black uppercase">Fit</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="manual" className="data-[state=active]:bg-primary data-[state=active]:text-white py-4 md:py-6 flex flex-col gap-2 rounded-2xl md:rounded-3xl border-2 bg-secondary/20 transition-all hover:border-primary/30">
-                      <Layout className="w-5 h-5 md:w-6 md:h-6" />
-                      <span className="text-[10px] md:text-xs font-black uppercase">Free</span>
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+            {/* 2. Main Preview Area (Bigger & Centered) */}
+            <div className="w-full max-w-[500px] relative animate-in fade-in zoom-in-95 duration-700">
+              <div 
+                className={cn(
+                  "relative w-full aspect-square bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden cursor-move border-[12px] border-white touch-none group",
+                  previewMode === 'circle' ? "rounded-full" : "rounded-[3rem]"
+                )}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onWheel={handleWheel}
+              >
+                <canvas 
+                  ref={previewMode === 'square' ? rectCanvasRef : circleCanvasRef} 
+                  width={450} 
+                  height={450} 
+                  className="w-full h-full" 
+                />
+                <div className={cn(
+                  "absolute inset-0 border-4 border-dashed border-primary/20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity",
+                  previewMode === 'circle' ? "rounded-full" : "rounded-[2rem]"
+                )} />
               </div>
 
-              <div className="space-y-8 min-h-[120px]">
-                {mode === 'blur' && (
-                  <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-black text-[#111B21] uppercase tracking-wider">Blur Amount</label>
-                      <span className="text-sm font-mono font-bold text-primary px-3 py-1 bg-primary/10 rounded-lg">{blurIntensity}%</span>
-                    </div>
-                    <Slider value={[blurIntensity]} onValueChange={([v]) => setBlurIntensity(v)} max={100} className="py-2" />
-                  </div>
-                )}
+              {/* Reset/Remove Image Button */}
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => { setImage(null); setImageObj(null); }} 
+                className="absolute -top-4 -right-4 rounded-2xl bg-white shadow-xl text-destructive hover:bg-destructive hover:text-white h-12 w-12 border-none transition-all hover:rotate-90 z-20"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            </div>
 
-                {mode === 'solid' && (
-                  <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
-                    <label className="text-sm font-black text-[#111B21] uppercase tracking-wider">Background Color</label>
-                    <div className="grid grid-cols-5 md:grid-cols-7 gap-3">
-                      {['#FFFFFF', '#F0F2F5', '#25D366', '#128C7E', '#111B21', '#E7E9ED', '#FF5B5B'].map((color) => (
+            {/* 3. Integrated Controls (Directly Below Preview) */}
+            <div className="w-full max-w-2xl space-y-8 mt-4">
+              
+              {/* Scale Control - Primary */}
+              <div className="bg-secondary/10 p-6 rounded-[2.5rem] space-y-4 border border-white">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <ZoomIn className="w-4 h-4 text-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#111B21]/60">Image Scale</span>
+                  </div>
+                  <span className="text-sm font-mono font-bold text-primary px-3 py-1 bg-primary/10 rounded-lg">{zoom}%</span>
+                </div>
+                <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={10} max={400} className="py-2" />
+                <div className="flex gap-3">
+                  <Button variant="secondary" className="flex-1 rounded-xl h-12 bg-white font-bold" onClick={() => setZoom(Math.max(10, zoom - 10))}>
+                    <ZoomOut className="w-4 h-4 mr-2" /> Smaller
+                  </Button>
+                  <Button variant="secondary" className="flex-1 rounded-xl h-12 bg-white font-bold" onClick={() => setZoom(Math.min(400, zoom + 10))}>
+                    <ZoomIn className="w-4 h-4 mr-2" /> Larger
+                  </Button>
+                </div>
+              </div>
+
+              {/* Tabs for Editing Modes */}
+              <Tabs defaultValue="background" className="w-full">
+                <TabsList className="grid grid-cols-2 bg-secondary/20 p-1.5 rounded-2xl h-auto mb-6">
+                  <TabsTrigger value="background" className="rounded-xl py-3 font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <ImageIcon className="w-4 h-4" /> Background
+                  </TabsTrigger>
+                  <TabsTrigger value="adjust" className="rounded-xl py-3 font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <SlidersHorizontal className="w-4 h-4" /> Adjustments
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Background Content */}
+                <TabsContent value="background" className="space-y-8 animate-in slide-in-from-bottom-2 duration-400 mt-0">
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {([
+                        { id: 'blur', icon: ImageIcon, label: 'Blur' },
+                        { id: 'solid', icon: Palette, label: 'Color' },
+                        { id: 'fit', icon: Maximize, label: 'Fit' },
+                        { id: 'manual', icon: Layout, label: 'Manual' }
+                      ] as const).map((item) => (
                         <button
-                          key={color}
-                          className={cn("aspect-square rounded-full border-4 transition-all hover:scale-110", bgColor === color ? "border-primary shadow-lg shadow-primary/30 scale-110" : "border-white shadow-sm hover:border-primary/20")}
-                          style={{ backgroundColor: color }}
-                          onClick={() => setBgColor(color)}
-                        />
+                          key={item.id}
+                          onClick={() => setMode(item.id)}
+                          className={cn(
+                            "flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all gap-2",
+                            mode === item.id ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-white border-secondary/50 hover:border-primary/30"
+                          )}
+                        >
+                          <item.icon className="w-6 h-6" />
+                          <span className="text-[10px] font-black uppercase">{item.label}</span>
+                        </button>
                       ))}
-                      <div className="relative aspect-square">
-                        <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-full rounded-full border-none p-0 overflow-hidden cursor-pointer opacity-0 absolute inset-0 z-10" />
-                        <div className="w-full h-full rounded-full border-2 border-dashed border-primary/40 flex items-center justify-center bg-secondary/30 transition-colors hover:bg-primary/10">
-                          <Palette className="w-5 h-5 text-primary" />
+                    </div>
+
+                    {mode === 'blur' && (
+                      <div className="p-6 bg-secondary/5 rounded-3xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Blur Intensity</label>
+                          <span className="text-sm font-bold text-primary">{blurIntensity}%</span>
+                        </div>
+                        <Slider value={[blurIntensity]} onValueChange={([v]) => setBlurIntensity(v)} max={100} />
+                      </div>
+                    )}
+
+                    {mode === 'solid' && (
+                      <div className="p-6 bg-secondary/5 rounded-3xl space-y-4">
+                        <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Background Color</label>
+                        <div className="flex flex-wrap gap-3">
+                          {['#FFFFFF', '#F0F2F5', '#25D366', '#128C7E', '#111B21', '#FF5B5B', '#FFD93D'].map((color) => (
+                            <button
+                              key={color}
+                              className={cn("w-10 h-10 rounded-full border-4 transition-all hover:scale-110", bgColor === color ? "border-primary scale-110 shadow-lg" : "border-white")}
+                              style={{ backgroundColor: color }}
+                              onClick={() => setBgColor(color)}
+                            />
+                          ))}
+                          <div className="relative w-10 h-10">
+                            <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-full rounded-full border-none p-0 overflow-hidden cursor-pointer absolute opacity-0 z-10" />
+                            <div className="w-full h-full rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center bg-white">
+                              <Palette className="w-4 h-4 text-primary" />
+                            </div>
+                          </div>
                         </div>
                       </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Adjustment Content */}
+                <TabsContent value="adjust" className="space-y-6 animate-in slide-in-from-bottom-2 duration-400 mt-0">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="p-6 bg-secondary/5 rounded-3xl space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sun className="w-4 h-4 text-primary" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Brightness</span>
+                        </div>
+                        <span className="text-sm font-bold text-primary">{brightness}%</span>
+                      </div>
+                      <Slider value={[brightness]} onValueChange={([v]) => setBrightness(v)} min={0} max={200} />
+                    </div>
+
+                    <div className="p-6 bg-secondary/5 rounded-3xl space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Contrast className="w-4 h-4 text-primary" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Contrast</span>
+                        </div>
+                        <span className="text-sm font-bold text-primary">{contrast}%</span>
+                      </div>
+                      <Slider value={[contrast]} onValueChange={([v]) => setContrast(v)} min={0} max={200} />
+                    </div>
+
+                    <div className="p-6 bg-secondary/5 rounded-3xl space-y-4 md:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Droplets className="w-4 h-4 text-primary" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Saturation</span>
+                        </div>
+                        <span className="text-sm font-bold text-primary">{saturation}%</span>
+                      </div>
+                      <Slider value={[saturation]} onValueChange={([v]) => setSaturation(v)} min={0} max={200} />
                     </div>
                   </div>
-                )}
-              </div>
+                </TabsContent>
+              </Tabs>
 
-              <div className="mt-auto space-y-4 pt-10">
+              {/* Download & Final Stats */}
+              <div className="pt-6 space-y-6">
                 <Button 
-                  className="w-full gap-4 h-20 md:h-24 text-xl md:text-3xl font-black rounded-3xl shadow-[0_25px_50px_-15px_rgba(37,211,102,0.4)] hover:scale-[1.03] active:scale-95 transition-all bg-primary hover:bg-[#128C7E] text-white group" 
+                  className="w-full gap-4 h-20 md:h-24 text-xl md:text-3xl font-black rounded-3xl shadow-[0_25px_50px_-15px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-[#128C7E] text-white group" 
                   onClick={handleDownload} 
                   disabled={!imageObj}
                 >
-                  <Download className="w-8 h-8 md:w-10 md:h-10 group-hover:-translate-y-1 transition-transform" />
+                  <Download className="w-8 h-8 group-hover:-translate-y-1 transition-transform" />
                   Download HD DP
                 </Button>
-                
-                <div className="flex flex-col items-center gap-3 mt-4">
-                  <div className="flex items-center gap-2 text-[10px] text-[#111B21]/30 font-black uppercase tracking-[0.3em]">
-                    <CheckCircle2 className="w-3 h-3 text-primary" />
-                    Ultra HD 1080px Quality
+
+                <div className="flex flex-col items-center gap-4">
+                  <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-bold bg-secondary/40 px-6 py-3 rounded-full border border-white">
+                    <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-primary" /> 1080x1080px HD</span>
+                    <span className="w-px h-3 bg-muted-foreground/30" />
+                    <span className="flex items-center gap-1.5"><AlertCircle className="w-4 h-4 text-primary" /> No Watermark</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold text-center bg-secondary/50 px-4 py-1 rounded-full">
-                    <AlertCircle className="w-3 h-3" />
-                    No Watermark • 100% Free • Secure
-                  </div>
+                  <NativeAd className="mt-4" />
                 </div>
               </div>
             </div>
