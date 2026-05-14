@@ -254,58 +254,58 @@ export function WhatsCropWorkspace() {
 
   return (
     <div className="max-w-5xl mx-auto w-full px-4 mb-20">
-      <Card className="workspace-shadow border-none bg-white overflow-hidden rounded-[2.5rem] md:rounded-[3rem]">
+      <Card className="workspace-shadow border-none bg-white overflow-hidden rounded-[2rem] md:rounded-[2.5rem]">
         {!image ? (
           <>
             <div 
               onDragOver={handleDragOver}
               onDrop={handleDrop}
-              className="p-12 md:p-40 flex flex-col items-center justify-center text-center cursor-pointer bg-secondary/10 hover:bg-primary/5 transition-all group relative overflow-hidden"
+              className="p-12 md:p-32 flex flex-col items-center justify-center text-center cursor-pointer bg-secondary/10 hover:bg-primary/5 transition-all group relative overflow-hidden"
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl" />
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full -ml-32 -mb-32 blur-3xl" />
 
               <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-500 z-10">
-                <Upload className="w-12 h-12 md:w-16 md:h-16 text-primary" />
+              <div className="w-20 h-20 md:w-24 md:h-24 bg-white rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center mb-6 shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-500 z-10">
+                <Upload className="w-10 h-10 md:w-12 md:h-12 text-primary" />
               </div>
-              <h3 className="text-3xl md:text-5xl font-headline font-bold mb-4 text-[#111B21] z-10">Create your Full DP</h3>
-              <p className="text-muted-foreground mb-10 max-w-sm text-base md:text-xl font-medium z-10">
+              <h3 className="text-2xl md:text-4xl font-headline font-bold mb-3 text-[#111B21] z-10">Create your Full DP</h3>
+              <p className="text-muted-foreground mb-8 max-w-sm text-sm md:text-lg font-medium z-10">
                 Drag and drop your photo here, or tap to browse your gallery.
               </p>
-              <Button size="lg" className="rounded-full px-12 md:px-20 h-16 md:h-20 text-lg md:text-2xl font-bold bg-primary hover:bg-[#128C7E] text-white shadow-xl shadow-primary/30 z-10 transition-all hover:scale-105">
+              <Button size="lg" className="rounded-full px-10 md:px-16 h-14 md:h-16 text-base md:text-xl font-bold bg-primary hover:bg-[#128C7E] text-white shadow-xl shadow-primary/30 z-10 transition-all hover:scale-105">
                 Select Photo
               </Button>
             </div>
             <NativeAd className="px-6 border-t border-secondary/10" />
           </>
         ) : (
-          <div className="flex flex-col items-center p-6 md:p-12 gap-8">
-            {/* 1. View Selection Toggles */}
-            <div className="flex p-1.5 bg-secondary/20 backdrop-blur-md rounded-2xl shadow-inner w-full max-w-md mx-auto">
+          <div className="flex flex-col items-center p-4 md:p-8 gap-6">
+            {/* 1. View Selection Toggles - Compact */}
+            <div className="flex p-1 bg-secondary/20 backdrop-blur-md rounded-xl shadow-inner w-full max-w-sm mx-auto">
               <Button 
                 variant={previewMode === 'square' ? 'default' : 'ghost'} 
                 onClick={() => setPreviewMode('square')}
-                className={cn("flex-1 rounded-xl px-4 gap-2 h-12 font-bold transition-all", previewMode === 'square' ? "bg-primary text-white shadow-lg" : "text-muted-foreground")}
+                className={cn("flex-1 rounded-lg px-3 gap-2 h-10 text-xs font-bold transition-all", previewMode === 'square' ? "bg-primary text-white shadow-md" : "text-muted-foreground")}
               >
-                <Square className="w-5 h-5" /> <span>Square View</span>
+                <Square className="w-4 h-4" /> <span>Square</span>
               </Button>
               <Button 
                 variant={previewMode === 'circle' ? 'default' : 'ghost'} 
                 onClick={() => setPreviewMode('circle')}
-                className={cn("flex-1 rounded-xl px-4 gap-2 h-12 font-bold transition-all", previewMode === 'circle' ? "bg-primary text-white shadow-lg" : "text-muted-foreground")}
+                className={cn("flex-1 rounded-lg px-3 gap-2 h-10 text-xs font-bold transition-all", previewMode === 'circle' ? "bg-primary text-white shadow-md" : "text-muted-foreground")}
               >
-                <Circle className="w-5 h-5" /> <span>Circle View</span>
+                <Circle className="w-4 h-4" /> <span>Circle</span>
               </Button>
             </div>
 
-            {/* 2. Main Preview Area (Bigger & Centered) */}
+            {/* 2. Main Preview Area */}
             <div className="w-full max-w-[500px] relative animate-in fade-in zoom-in-95 duration-700">
               <div 
                 className={cn(
-                  "relative w-full aspect-square bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden cursor-move border-[12px] border-white touch-none group",
-                  previewMode === 'circle' ? "rounded-full" : "rounded-[3rem]"
+                  "relative w-full aspect-square bg-white shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden cursor-move border-[8px] border-white touch-none group",
+                  previewMode === 'circle' ? "rounded-full" : "rounded-[2rem]"
                 )}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
@@ -323,146 +323,141 @@ export function WhatsCropWorkspace() {
                   className="w-full h-full" 
                 />
                 <div className={cn(
-                  "absolute inset-0 border-4 border-dashed border-primary/20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity",
-                  previewMode === 'circle' ? "rounded-full" : "rounded-[2rem]"
+                  "absolute inset-0 border-2 border-dashed border-primary/20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity",
+                  previewMode === 'circle' ? "rounded-full" : "rounded-[1.5rem]"
                 )} />
               </div>
 
-              {/* Reset/Remove Image Button */}
               <Button 
                 variant="outline" 
                 size="icon" 
                 onClick={() => { setImage(null); setImageObj(null); }} 
-                className="absolute -top-4 -right-4 rounded-2xl bg-white shadow-xl text-destructive hover:bg-destructive hover:text-white h-12 w-12 border-none transition-all hover:rotate-90 z-20"
+                className="absolute -top-2 -right-2 rounded-xl bg-white shadow-lg text-destructive hover:bg-destructive hover:text-white h-10 w-10 border-none transition-all hover:rotate-90 z-20"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </Button>
             </div>
 
-            {/* 3. Integrated Controls (Directly Below Preview) */}
-            <div className="w-full max-w-2xl space-y-8 mt-4">
+            {/* 3. Integrated Controls - Optimized Space */}
+            <div className="w-full max-w-xl space-y-6">
               
-              {/* Scale Control - Primary */}
-              <div className="bg-secondary/10 p-6 rounded-[2.5rem] space-y-4 border border-white">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <ZoomIn className="w-4 h-4 text-primary" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#111B21]/60">Image Scale</span>
+              {/* Scale Control - Compact */}
+              <div className="bg-secondary/10 p-4 rounded-[1.5rem] space-y-3 border border-white">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <ZoomIn className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[#111B21]/60">Image Scale</span>
                   </div>
-                  <span className="text-sm font-mono font-bold text-primary px-3 py-1 bg-primary/10 rounded-lg">{zoom}%</span>
+                  <span className="text-xs font-mono font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-md">{zoom}%</span>
                 </div>
-                <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={10} max={400} className="py-2" />
-                <div className="flex gap-3">
-                  <Button variant="secondary" className="flex-1 rounded-xl h-12 bg-white font-bold" onClick={() => setZoom(Math.max(10, zoom - 10))}>
-                    <ZoomOut className="w-4 h-4 mr-2" /> Smaller
+                <Slider value={[zoom]} onValueChange={([v]) => setZoom(v)} min={10} max={400} className="py-1" />
+                <div className="flex gap-2">
+                  <Button variant="secondary" className="flex-1 rounded-lg h-9 bg-white text-xs font-bold" onClick={() => setZoom(Math.max(10, zoom - 10))}>
+                    <ZoomOut className="w-3.5 h-3.5 mr-1.5" /> Smaller
                   </Button>
-                  <Button variant="secondary" className="flex-1 rounded-xl h-12 bg-white font-bold" onClick={() => setZoom(Math.min(400, zoom + 10))}>
-                    <ZoomIn className="w-4 h-4 mr-2" /> Larger
+                  <Button variant="secondary" className="flex-1 rounded-lg h-9 bg-white text-xs font-bold" onClick={() => setZoom(Math.min(400, zoom + 10))}>
+                    <ZoomIn className="w-3.5 h-3.5 mr-1.5" /> Larger
                   </Button>
                 </div>
               </div>
 
-              {/* Tabs for Editing Modes */}
+              {/* Tabs for Editing Modes - Compact */}
               <Tabs defaultValue="background" className="w-full">
-                <TabsList className="grid grid-cols-2 bg-secondary/20 p-1.5 rounded-2xl h-auto mb-6">
-                  <TabsTrigger value="background" className="rounded-xl py-3 font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    <ImageIcon className="w-4 h-4" /> Background
+                <TabsList className="grid grid-cols-2 bg-secondary/20 p-1 rounded-xl h-auto mb-4">
+                  <TabsTrigger value="background" className="rounded-lg py-2 text-xs font-bold gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <ImageIcon className="w-3.5 h-3.5" /> Background
                   </TabsTrigger>
-                  <TabsTrigger value="adjust" className="rounded-xl py-3 font-bold gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    <SlidersHorizontal className="w-4 h-4" /> Adjustments
+                  <TabsTrigger value="adjust" className="rounded-lg py-2 text-xs font-bold gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <SlidersHorizontal className="w-3.5 h-3.5" /> Adjust
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Background Content */}
-                <TabsContent value="background" className="space-y-8 animate-in slide-in-from-bottom-2 duration-400 mt-0">
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {([
-                        { id: 'blur', icon: ImageIcon, label: 'Blur' },
-                        { id: 'solid', icon: Palette, label: 'Color' },
-                        { id: 'fit', icon: Maximize, label: 'Fit' },
-                        { id: 'manual', icon: Layout, label: 'Manual' }
-                      ] as const).map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => setMode(item.id)}
-                          className={cn(
-                            "flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all gap-2",
-                            mode === item.id ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-white border-secondary/50 hover:border-primary/30"
-                          )}
-                        >
-                          <item.icon className="w-6 h-6" />
-                          <span className="text-[10px] font-black uppercase">{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
+                <TabsContent value="background" className="space-y-4 animate-in slide-in-from-bottom-1 duration-300 mt-0">
+                  <div className="grid grid-cols-4 gap-2">
+                    {([
+                      { id: 'blur', icon: ImageIcon, label: 'Blur' },
+                      { id: 'solid', icon: Palette, label: 'Color' },
+                      { id: 'fit', icon: Maximize, label: 'Fit' },
+                      { id: 'manual', icon: Layout, label: 'Manual' }
+                    ] as const).map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setMode(item.id)}
+                        className={cn(
+                          "flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all gap-1",
+                          mode === item.id ? "bg-primary text-white border-primary shadow-md" : "bg-white border-secondary/50 hover:border-primary/30"
+                        )}
+                      >
+                        <item.icon className="w-4 h-4" />
+                        <span className="text-[8px] font-black uppercase">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
 
-                    {mode === 'blur' && (
-                      <div className="p-6 bg-secondary/5 rounded-3xl space-y-4">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Blur Intensity</label>
-                          <span className="text-sm font-bold text-primary">{blurIntensity}%</span>
-                        </div>
-                        <Slider value={[blurIntensity]} onValueChange={([v]) => setBlurIntensity(v)} max={100} />
+                  {mode === 'blur' && (
+                    <div className="p-3 bg-secondary/5 rounded-2xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Blur Intensity</label>
+                        <span className="text-xs font-bold text-primary">{blurIntensity}%</span>
                       </div>
-                    )}
+                      <Slider value={[blurIntensity]} onValueChange={([v]) => setBlurIntensity(v)} max={100} />
+                    </div>
+                  )}
 
-                    {mode === 'solid' && (
-                      <div className="p-6 bg-secondary/5 rounded-3xl space-y-4">
-                        <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Background Color</label>
-                        <div className="flex flex-wrap gap-3">
-                          {['#FFFFFF', '#F0F2F5', '#25D366', '#128C7E', '#111B21', '#FF5B5B', '#FFD93D'].map((color) => (
-                            <button
-                              key={color}
-                              className={cn("w-10 h-10 rounded-full border-4 transition-all hover:scale-110", bgColor === color ? "border-primary scale-110 shadow-lg" : "border-white")}
-                              style={{ backgroundColor: color }}
-                              onClick={() => setBgColor(color)}
-                            />
-                          ))}
-                          <div className="relative w-10 h-10">
-                            <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-full rounded-full border-none p-0 overflow-hidden cursor-pointer absolute opacity-0 z-10" />
-                            <div className="w-full h-full rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center bg-white">
-                              <Palette className="w-4 h-4 text-primary" />
-                            </div>
+                  {mode === 'solid' && (
+                    <div className="p-3 bg-secondary/5 rounded-2xl space-y-2">
+                      <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Background Color</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['#FFFFFF', '#F0F2F5', '#25D366', '#128C7E', '#111B21', '#FF5B5B', '#FFD93D'].map((color) => (
+                          <button
+                            key={color}
+                            className={cn("w-7 h-7 rounded-full border-2 transition-all", bgColor === color ? "border-primary scale-105" : "border-white")}
+                            style={{ backgroundColor: color }}
+                            onClick={() => setBgColor(color)}
+                          />
+                        ))}
+                        <div className="relative w-7 h-7">
+                          <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-full rounded-full border-none p-0 overflow-hidden cursor-pointer absolute opacity-0 z-10" />
+                          <div className="w-full h-full rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center bg-white">
+                            <Palette className="w-3 h-3 text-primary" />
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </TabsContent>
 
-                {/* Adjustment Content */}
-                <TabsContent value="adjust" className="space-y-6 animate-in slide-in-from-bottom-2 duration-400 mt-0">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="p-6 bg-secondary/5 rounded-3xl space-y-4">
+                <TabsContent value="adjust" className="space-y-3 animate-in slide-in-from-bottom-1 duration-300 mt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3 bg-secondary/5 rounded-2xl space-y-2">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Sun className="w-4 h-4 text-primary" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">Brightness</span>
+                        <div className="flex items-center gap-1.5">
+                          <Sun className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-[9px] font-bold uppercase tracking-widest">Brightness</span>
                         </div>
-                        <span className="text-sm font-bold text-primary">{brightness}%</span>
+                        <span className="text-xs font-bold text-primary">{brightness}%</span>
                       </div>
                       <Slider value={[brightness]} onValueChange={([v]) => setBrightness(v)} min={0} max={200} />
                     </div>
 
-                    <div className="p-6 bg-secondary/5 rounded-3xl space-y-4">
+                    <div className="p-3 bg-secondary/5 rounded-2xl space-y-2">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Contrast className="w-4 h-4 text-primary" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">Contrast</span>
+                        <div className="flex items-center gap-1.5">
+                          <Contrast className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-[9px] font-bold uppercase tracking-widest">Contrast</span>
                         </div>
-                        <span className="text-sm font-bold text-primary">{contrast}%</span>
+                        <span className="text-xs font-bold text-primary">{contrast}%</span>
                       </div>
                       <Slider value={[contrast]} onValueChange={([v]) => setContrast(v)} min={0} max={200} />
                     </div>
 
-                    <div className="p-6 bg-secondary/5 rounded-3xl space-y-4 md:col-span-2">
+                    <div className="p-3 bg-secondary/5 rounded-2xl space-y-2 md:col-span-2">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Droplets className="w-4 h-4 text-primary" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">Saturation</span>
+                        <div className="flex items-center gap-1.5">
+                          <Droplets className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-[9px] font-bold uppercase tracking-widest">Saturation</span>
                         </div>
-                        <span className="text-sm font-bold text-primary">{saturation}%</span>
+                        <span className="text-xs font-bold text-primary">{saturation}%</span>
                       </div>
                       <Slider value={[saturation]} onValueChange={([v]) => setSaturation(v)} min={0} max={200} />
                     </div>
@@ -470,24 +465,24 @@ export function WhatsCropWorkspace() {
                 </TabsContent>
               </Tabs>
 
-              {/* Download & Final Stats */}
-              <div className="pt-6 space-y-6">
+              {/* Download & Final Stats - Optimized */}
+              <div className="pt-2 space-y-4">
                 <Button 
-                  className="w-full gap-4 h-20 md:h-24 text-xl md:text-3xl font-black rounded-3xl shadow-[0_25px_50px_-15px_rgba(37,211,102,0.4)] hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-[#128C7E] text-white group" 
+                  className="w-full gap-3 h-16 md:h-20 text-lg md:text-2xl font-black rounded-2xl shadow-lg hover:scale-[1.01] active:scale-95 transition-all bg-primary hover:bg-[#128C7E] text-white group" 
                   onClick={handleDownload} 
                   disabled={!imageObj}
                 >
-                  <Download className="w-8 h-8 group-hover:-translate-y-1 transition-transform" />
+                  <Download className="w-6 h-6 md:w-7 md:h-7 group-hover:-translate-y-1 transition-transform" />
                   Download HD DP
                 </Button>
 
-                <div className="flex flex-col items-center gap-4">
-                  <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-bold bg-secondary/40 px-6 py-3 rounded-full border border-white">
-                    <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-primary" /> 1080x1080px HD</span>
-                    <span className="w-px h-3 bg-muted-foreground/30" />
-                    <span className="flex items-center gap-1.5"><AlertCircle className="w-4 h-4 text-primary" /> No Watermark</span>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-3 text-[8px] md:text-[10px] text-muted-foreground font-bold bg-secondary/30 px-4 py-2 rounded-full border border-white">
+                    <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" /> 1080px HD</span>
+                    <span className="w-px h-2.5 bg-muted-foreground/30" />
+                    <span className="flex items-center gap-1"><AlertCircle className="w-3 h-3 text-primary" /> No Watermark</span>
                   </div>
-                  <NativeAd className="mt-4" />
+                  <NativeAd className="mt-2" />
                 </div>
               </div>
             </div>
